@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-import { createWriteStream } from "node:fs";
-import { promises as fs } from "node:fs";
+import { spawn } from "node:child_process";
+import { createWriteStream, promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_FILE = fileURLToPath(import.meta.url);
@@ -12,7 +11,8 @@ const ROOT_DIR = path.resolve(path.dirname(SCRIPT_FILE), "..");
 const FIXTURES_DIR = path.join(ROOT_DIR, "fixtures");
 const SERVER_PORT = process.env.SERVER_PORT || "8000";
 const BASE_URL = `http://localhost:${SERVER_PORT}`;
-const SERVER_LOG = process.env.SERVER_LOG || path.join(os.tmpdir(), "eml-to-html-serve.log");
+const SERVER_LOG =
+  process.env.SERVER_LOG || path.join(os.tmpdir(), "eml-to-html-serve.log");
 const NPX_BIN = process.platform === "win32" ? "npx.cmd" : "npx";
 const UVX_BIN = process.platform === "win32" ? "uvx.exe" : "uvx";
 
@@ -29,7 +29,10 @@ function toPosixRelativePath(filePath, baseDir) {
 
 function toFetchPath(filePath) {
   const rel = toPosixRelativePath(filePath, ROOT_DIR);
-  return `/${rel.split("/").map((segment) => encodeURIComponent(segment)).join("/")}`;
+  return `/${rel
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/")}`;
 }
 
 function runCommand(command, args, options = {}) {
@@ -62,13 +65,20 @@ function runCommand(command, args, options = {}) {
       }
 
       const output = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
-      reject(new Error(`Command failed (${command} ${args.join(" ")}): ${output}`));
+      reject(
+        new Error(`Command failed (${command} ${args.join(" ")}): ${output}`),
+      );
     });
   });
 }
 
 async function runBrowserJs(expression) {
-  const result = await runCommand(UVX_BIN, ["rodney", "--local", "js", expression]);
+  const result = await runCommand(UVX_BIN, [
+    "rodney",
+    "--local",
+    "js",
+    expression,
+  ]);
   return result.stdout;
 }
 
@@ -113,7 +123,9 @@ async function installDownloadInterceptor() {
 }
 
 async function getDownloadCount() {
-  const countRaw = await runBrowserJs("window.__rodneySmokeDownloads?.length ?? 0");
+  const countRaw = await runBrowserJs(
+    "window.__rodneySmokeDownloads?.length ?? 0",
+  );
   return Number.parseInt(countRaw, 10) || 0;
 }
 
@@ -131,7 +143,9 @@ async function waitForDownloadCount(expectedCount) {
 }
 
 async function getLastDownloadMeta() {
-  const raw = await runBrowserJs("JSON.stringify((window.__rodneySmokeDownloads || []).at(-1) || null)");
+  const raw = await runBrowserJs(
+    "JSON.stringify((window.__rodneySmokeDownloads || []).at(-1) || null)",
+  );
   if (!raw) {
     return null;
   }
@@ -222,7 +236,9 @@ async function stopServer() {
 }
 
 async function cleanup() {
-  await runCommand(UVX_BIN, ["rodney", "--local", "stop"], { allowFailure: true });
+  await runCommand(UVX_BIN, ["rodney", "--local", "stop"], {
+    allowFailure: true,
+  });
   await stopServer();
 }
 
@@ -317,7 +333,13 @@ async function run() {
   for (const fixturePath of fixtures) {
     const label = toPosixRelativePath(fixturePath, ROOT_DIR);
     log(`Uploading fixture via #file-input: ${label}`);
-    await runCommand(UVX_BIN, ["rodney", "--local", "file", "#file-input", fixturePath]);
+    await runCommand(UVX_BIN, [
+      "rodney",
+      "--local",
+      "file",
+      "#file-input",
+      fixturePath,
+    ]);
     await runCommand(UVX_BIN, ["rodney", "--local", "waitstable"]);
     await assertLoadedState();
     await resetAndAssertHidden();
@@ -348,15 +370,24 @@ async function run() {
     throw new Error("HTML download was not captured with a .html filename");
   }
   if (htmlDownload.type !== "text/html") {
-    throw new Error(`HTML download type mismatch: expected text/html, got ${htmlDownload.type}`);
+    throw new Error(
+      `HTML download type mismatch: expected text/html, got ${htmlDownload.type}`,
+    );
   }
   if (htmlDownload.size < 200) {
-    throw new Error(`HTML download is unexpectedly small (${htmlDownload.size} bytes)`);
+    throw new Error(
+      `HTML download is unexpectedly small (${htmlDownload.size} bytes)`,
+    );
   }
 
   log("Validating Download PNG flow");
   const pngDownloadsBefore = await getDownloadCount();
-  await runCommand(UVX_BIN, ["rodney", "--local", "click", "#download-png-btn"]);
+  await runCommand(UVX_BIN, [
+    "rodney",
+    "--local",
+    "click",
+    "#download-png-btn",
+  ]);
   await runCommand(UVX_BIN, ["rodney", "--local", "waitstable"]);
   await runCommand(UVX_BIN, ["rodney", "--local", "sleep", "3"]);
   await waitForDownloadCount(pngDownloadsBefore + 1);
@@ -377,13 +408,19 @@ async function run() {
     throw new Error("PNG download was not captured with a .png filename");
   }
   if (pngDownload.type !== "image/png") {
-    throw new Error(`PNG download type mismatch: expected image/png, got ${pngDownload.type}`);
+    throw new Error(
+      `PNG download type mismatch: expected image/png, got ${pngDownload.type}`,
+    );
   }
   if (pngDownload.signature !== "89504e470d0a1a0a") {
-    throw new Error(`PNG signature mismatch: got ${pngDownload.signature || "<empty>"}`);
+    throw new Error(
+      `PNG signature mismatch: got ${pngDownload.signature || "<empty>"}`,
+    );
   }
   if (pngDownload.size < 1024) {
-    throw new Error(`PNG download is unexpectedly small (${pngDownload.size} bytes)`);
+    throw new Error(
+      `PNG download is unexpectedly small (${pngDownload.size} bytes)`,
+    );
   }
 
   log("Smoke test completed successfully");
