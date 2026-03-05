@@ -618,10 +618,9 @@
 		// understands multipart messages—where an email can contain many 
 		// versions (text, HTML) and attachments.
 		function parseEntity(headers, bodyText, context) {
-			const contentType = (
-				getHeader(headers, "content-type") || "text/plain"
-			).toLowerCase();
-			const boundary = extractBoundary(contentType);
+			const contentTypeHeader = getHeader(headers, "content-type") || "text/plain";
+			const contentType = contentTypeHeader.toLowerCase();
+			const boundary = extractBoundary(contentTypeHeader);
 
 			if (contentType.includes("multipart/") && boundary) {
 				for (const part of splitMultipart(bodyText, boundary)) {
