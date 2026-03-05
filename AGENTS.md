@@ -24,7 +24,7 @@ This repo currently has no `package.json`, no build system, and no test runner c
 ### Run locally
 
 - Start static server from repo root:
-  - `python3 -m http.server 8000`
+  - `npx serve . -p 8000`
 - Open app:
   - `http://localhost:8000`
 
@@ -55,7 +55,7 @@ This repo currently has no `package.json`, no build system, and no test runner c
 
 Use one focused verification at a time:
 
-1. Launch server: `python3 -m http.server 8000`
+1. Launch server: `npx serve . -p 8000`
 2. Open app in browser.
 3. Drag a known `.eml` fixture.
 4. Confirm headers render.
