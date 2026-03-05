@@ -9,6 +9,7 @@
 .agent/
 _agents/
 _agent/
+.rodney/
 brain/
 walkthrough.md
 task.md
