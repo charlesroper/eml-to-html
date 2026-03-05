@@ -1,0 +1,28 @@
+# IDE / System
+.DS_Store
+.vscode/
+.idea/
+
+# Agent / Tooling
+.gemini/
+.agents/
+.agent/
+_agents/
+_agent/
+brain/
+walkthrough.md
+task.md
+implementation_plan.md
+
+# Dependencies
+node_modules/
+dist/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Samples / Temp
+*.eml
+/tmp/
