@@ -65,6 +65,30 @@ Use one focused verification at a time:
 8. Confirm downloaded files preserve body and tight header spacing.
 9. Click **Load Another** and confirm the UI resets to original state.
 
+### Automated smoke test (Rodney)
+
+- Use this for repeatable, on-demand browser validation without relying on the native file picker dialog.
+- Fixture setup:
+  - Put one or more local `.eml` files in `fixtures/`.
+  - `.eml` files are git-ignored by design and should not be committed.
+  - If no fixtures are found, the smoke script exits with guidance.
+- Commands:
+  - Cross-platform (recommended): `node scripts/rodney-smoke.mjs`
+  - Unix wrapper: `./scripts/rodney-smoke.sh`
+- What it covers:
+  - Starts `npx serve . -p 8000`.
+  - Starts a local Rodney browser session (`--local`).
+  - Loads all `.eml` files found under `fixtures/`.
+  - Uploads each `.eml` fixture via `rodney file "#file-input" <absolute-path>`.
+  - Verifies render state (`#email-content` visible, no visible error, iframe/pre content exists).
+  - Verifies reset flow (`#reset-btn`).
+  - Runs a synthetic drag-and-drop upload via `DataTransfer` dispatch (using the first discovered fixture).
+  - Clicks **Download HTML** and **Download PNG**, then checks no visible error, processing state clears, and captured blob downloads have expected filename/type/size (plus PNG signature validation).
+  - Cleans up Rodney and the static server automatically.
+- Optional environment variables:
+  - `SERVER_PORT` (default `8000`)
+  - `SERVER_LOG` (default `/tmp/eml-to-html-serve.log`)
+
 ### Optional ad-hoc checks
 
 - Syntax sanity in browser devtools console.
