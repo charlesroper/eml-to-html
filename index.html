@@ -1,510 +1,520 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+      name="description"
+      content="Convert .eml email files into viewable and downloadable HTML."
+    >
+    <meta name="keywords" content="eml, email, html, converter">
+    <title>EML to HTML Converter</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    >
+    <style>
+    .drop-zone {
+      border: 2px dashed var(--pico-muted-border-color);
+      border-radius: var(--pico-border-radius);
+      padding: 3rem;
+      text-align: center;
+      cursor: pointer;
+      transition:
+        border-color 0.2s,
+        background-color 0.2s;
+    }
 
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="description" content="Convert .eml email files into viewable and downloadable HTML.">
-	<meta name="keywords" content="eml, email, html, converter">
-	<title>EML to HTML Converter</title>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-	<style>
-		.drop-zone {
-			border: 2px dashed var(--pico-muted-border-color);
-			border-radius: var(--pico-border-radius);
-			padding: 3rem;
-			text-align: center;
-			cursor: pointer;
-			transition:
-				border-color 0.2s,
-				background-color 0.2s;
-		}
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--pico-primary);
+      background-color: var(--pico-primary-background);
+    }
 
-		.drop-zone:hover,
-		.drop-zone.dragover {
-			border-color: var(--pico-primary);
-			background-color: var(--pico-primary-background);
-		}
+    .drop-zone p {
+      margin: 0;
+      color: var(--pico-muted-color);
+    }
 
-		.drop-zone p {
-			margin: 0;
-			color: var(--pico-muted-color);
-		}
+    #email-content {
+      margin-top: 2rem;
+    }
 
-		#email-content {
-			margin-top: 2rem;
-		}
+    .email-header {
+      background: var(--pico-background-color);
+      padding: 1rem;
+      border-radius: var(--pico-border-radius);
+      margin-bottom: 1rem;
+    }
 
-		.email-header {
-			background: var(--pico-background-color);
-			padding: 1rem;
-			border-radius: var(--pico-border-radius);
-			margin-bottom: 1rem;
-		}
+    .email-header dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.25rem 0.5rem;
+      margin: 0;
+    }
 
-		.email-header dl {
-			display: grid;
-			grid-template-columns: auto 1fr;
-			gap: 0.25rem 0.5rem;
-			margin: 0;
-		}
+    .email-header dt {
+      font-weight: 600;
+      color: var(--pico-muted-color);
+    }
 
-		.email-header dt {
-			font-weight: 600;
-			color: var(--pico-muted-color);
-		}
+    .email-header dd {
+      margin: 0;
+    }
 
-		.email-header dd {
-			margin: 0;
-		}
+    .email-body {
+      line-height: 1.6;
+      border: 1px solid var(--pico-muted-border-color);
+      border-radius: var(--pico-border-radius);
+      min-height: 300px;
+    }
 
-		.email-body {
-			line-height: 1.6;
-			border: 1px solid var(--pico-muted-border-color);
-			border-radius: var(--pico-border-radius);
-			min-height: 300px;
-		}
+    .email-body iframe {
+      width: 100%;
+      min-height: 300px;
+      border: none;
+      border-radius: var(--pico-border-radius);
+    }
 
-		.email-body iframe {
-			width: 100%;
-			min-height: 300px;
-			border: none;
-			border-radius: var(--pico-border-radius);
-		}
+    .email-body pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      padding: 1rem;
+      margin: 0;
+    }
 
-		.email-body pre {
-			white-space: pre-wrap;
-			word-wrap: break-word;
-			padding: 1rem;
-			margin: 0;
-		}
+    .hidden {
+      display: none;
+    }
 
-		.hidden {
-			display: none;
-		}
+    .download-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
 
-		.download-actions {
-			display: flex;
-			gap: 0.5rem;
-			flex-wrap: wrap;
-			margin-bottom: 1rem;
-		}
+    .download-actions button {
+      margin: 0;
+    }
 
-		.download-actions button {
-			margin: 0;
-		}
+    #error-msg {
+      color: var(--pico-del-color);
+      margin-top: 1rem;
+    }
 
-		#error-msg {
-			color: var(--pico-del-color);
-			margin-top: 1rem;
-		}
+    #processing-indicator {
+      display: flex;
+      align-items: center;
+      margin-top: 1rem;
+      color: var(--pico-muted-color);
+    }
 
-		#processing-indicator {
-			display: flex;
-			align-items: center;
-			margin-top: 1rem;
-			color: var(--pico-muted-color);
-		}
+    #processing-indicator.hidden {
+      display: none;
+    }
 
-		#processing-indicator.hidden {
-			display: none;
-		}
+    #post-process-report {
+      margin-top: 1rem;
+      color: var(--pico-muted-color);
+      font-size: 0.8rem;
+      line-height: 1.35;
+      border: 1px solid var(--pico-muted-border-color);
+      border-radius: var(--pico-border-radius);
+      padding: 0.55rem 0.7rem;
+      background: var(--pico-background-color);
+    }
 
-		#post-process-report {
-			margin-top: 1rem;
-			color: var(--pico-muted-color);
-			font-size: 0.8rem;
-			line-height: 1.35;
-			border: 1px solid var(--pico-muted-border-color);
-			border-radius: var(--pico-border-radius);
-			padding: 0.55rem 0.7rem;
-			background: var(--pico-background-color);
-		}
+    #post-process-report.hidden {
+      display: none;
+    }
 
-		#post-process-report.hidden {
-			display: none;
-		}
+    #post-process-summary {
+      font-size: 0.85rem;
+      color: var(--pico-muted-color);
+    }
 
-		#post-process-summary {
-			font-size: 0.85rem;
-			color: var(--pico-muted-color);
-		}
+    #post-process-report ul {
+      margin: 0.35rem 0 0;
+      padding-left: 1rem;
+    }
 
-		#post-process-report ul {
-			margin: 0.35rem 0 0;
-			padding-left: 1rem;
-		}
+    #post-process-report li {
+      margin: 0.05rem 0;
+    }
+    </style>
+  </head>
 
-		#post-process-report li {
-			margin: 0.05rem 0;
-		}
-	</style>
-</head>
+  <body>
+    <main class="container">
+      <h1>EML to HTML Converter</h1>
+      <p>Drag and drop a .eml file to convert it to HTML</p>
+      <noscript>
+        <p>
+          <strong>This application requires JavaScript to function.</strong>
+        </p>
+      </noscript>
 
-<body>
-	<main class="container">
-		<h1>EML to HTML Converter</h1>
-		<p>Drag and drop a .eml file to convert it to HTML</p>
-		<noscript>
-			<p>
-				<strong>This application requires JavaScript to function.</strong>
-			</p>
-		</noscript>
+      <div class="drop-zone" id="drop-zone">
+        <p>Drop .eml file here or click to select</p>
+        <input type="file" id="file-input" accept=".eml" class="hidden">
+      </div>
+      <p id="error-msg" class="hidden"></p>
+      <div
+        id="processing-indicator"
+        class="hidden"
+        aria-live="polite"
+        role="status"
+      >
+        <span id="processing-text">Processing email…</span>
+      </div>
+      <details id="post-process-report" class="hidden" aria-live="polite">
+        <summary id="post-process-summary">Diagnostic details</summary>
+        <div id="post-process-report-body"></div>
+      </details>
 
-		<div class="drop-zone" id="drop-zone">
-			<p>Drop .eml file here or click to select</p>
-			<input type="file" id="file-input" accept=".eml" class="hidden">
-		</div>
-		<p id="error-msg" class="hidden"></p>
-		<div id="processing-indicator" class="hidden" aria-live="polite" role="status">
-			<span id="processing-text">Processing email…</span>
-		</div>
-		<details id="post-process-report" class="hidden" aria-live="polite">
-			<summary id="post-process-summary">Diagnostic details</summary>
-			<div id="post-process-report-body"></div>
-		</details>
+      <div id="email-content" class="hidden">
+        <div class="download-actions">
+          <button id="download-btn" type="button">Download HTML</button>
+          <button id="download-png-btn" type="button">Download PNG</button>
+          <button id="reset-btn" type="button" class="secondary outline">
+            Load Another
+          </button>
+        </div>
+        <article>
+          <header class="email-header" id="email-header"></header>
+          <div class="email-body" id="email-body"></div>
+        </article>
+      </div>
+    </main>
 
-		<div id="email-content" class="hidden">
-			<div class="download-actions">
-				<button id="download-btn" type="button">Download HTML</button>
-				<button id="download-png-btn" type="button">Download PNG</button>
-				<button id="reset-btn" type="button" class="secondary outline">
-					Load Another
-				</button>
-			</div>
-			<article>
-				<header class="email-header" id="email-header"></header>
-				<div class="email-body" id="email-body"></div>
-			</article>
-		</div>
-	</main>
+    <script>
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("file-input");
+    const emailContent = document.getElementById("email-content");
+    const emailHeader = document.getElementById("email-header");
+    const emailBody = document.getElementById("email-body");
+    const downloadBtn = document.getElementById("download-btn");
+    const downloadPngBtn = document.getElementById("download-png-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const errorMsg = document.getElementById("error-msg");
+    const processingIndicator = document.getElementById("processing-indicator");
+    const processingText = document.getElementById("processing-text");
+    const postProcessReport = document.getElementById("post-process-report");
+    const postProcessSummary = document.getElementById("post-process-summary");
+    const postProcessReportBody = document.getElementById(
+      "post-process-report-body",
+    );
+    const MAX_CONCURRENT_FETCHES = 6;
+    const FETCH_TIMEOUT_MS = 30000;
+    const DEBUG = false;
+    const TRANSPARENT_PIXEL =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-	<script>
-		const dropZone = document.getElementById("drop-zone");
-		const fileInput = document.getElementById("file-input");
-		const emailContent = document.getElementById("email-content");
-		const emailHeader = document.getElementById("email-header");
-		const emailBody = document.getElementById("email-body");
-		const downloadBtn = document.getElementById("download-btn");
-		const downloadPngBtn = document.getElementById("download-png-btn");
-		const resetBtn = document.getElementById("reset-btn");
-		const errorMsg = document.getElementById("error-msg");
-		const processingIndicator = document.getElementById("processing-indicator");
-		const processingText = document.getElementById("processing-text");
-		const postProcessReport = document.getElementById("post-process-report");
-		const postProcessSummary = document.getElementById("post-process-summary");
-		const postProcessReportBody = document.getElementById(
-			"post-process-report-body",
-		);
-		const MAX_CONCURRENT_FETCHES = 6;
-		const FETCH_TIMEOUT_MS = 30000;
-		const DEBUG = false;
-		const TRANSPARENT_PIXEL =
-			"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    // Log messages to the console only when DEBUG is enabled. This isolates
+    // diagnostic output from the main user interface.
+    function debugLog(...args) {
+      if (DEBUG) console.log(...args);
+    }
 
-		// Log messages to the console only when DEBUG is enabled. This isolates
-		// diagnostic output from the main user interface.
-		function debugLog(...args) {
-			if (DEBUG) console.log(...args);
-		}
+    let currentHeaders = {};
+    let currentBodyHtml = "";
+    let currentBodyIsHtml = false;
+    let currentOriginalBodyHtml = "";
+    let currentCidMap = new Map();
 
-		let currentHeaders = {};
-		let currentBodyHtml = "";
-		let currentBodyIsHtml = false;
-		let currentOriginalBodyHtml = "";
-		let currentCidMap = new Map();
+    downloadBtn.addEventListener("click", () => {
+      void downloadHtml();
+    });
+    downloadPngBtn.addEventListener("click", () => {
+      void downloadPng();
+    });
+    resetBtn.addEventListener("click", () => {
+      resetView();
+    });
 
-		downloadBtn.addEventListener("click", () => {
-			void downloadHtml();
-		});
-		downloadPngBtn.addEventListener("click", () => {
-			void downloadPng();
-		});
-		resetBtn.addEventListener("click", () => {
-			resetView();
-		});
+    dropZone.addEventListener("click", () => {
+      fileInput.value = "";
+      fileInput.click();
+    });
 
-		dropZone.addEventListener("click", () => {
-			fileInput.value = "";
-			fileInput.click();
-		});
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
 
-		dropZone.addEventListener("dragover", (e) => {
-			e.preventDefault();
-			dropZone.classList.add("dragover");
-		});
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
 
-		dropZone.addEventListener("dragleave", () => {
-			dropZone.classList.remove("dragover");
-		});
+    dropZone.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      debugLog("[drop] event fired");
+      debugLog(
+        "[drop] dataTransfer.types:",
+        Array.from(e.dataTransfer?.types ?? []),
+      );
+      debugLog(
+        "[drop] dataTransfer.files.length:",
+        e.dataTransfer?.files?.length,
+      );
+      debugLog(
+        "[drop] dataTransfer.items.length:",
+        e.dataTransfer?.items?.length,
+      );
+      const isEmptyTransfer =
+        !e.dataTransfer?.types?.length &&
+        !e.dataTransfer?.files?.length &&
+        !e.dataTransfer?.items?.length;
+      debugLog("[drop] isEmptyTransfer:", isEmptyTransfer);
 
-		dropZone.addEventListener("drop", async (e) => {
-			e.preventDefault();
-			dropZone.classList.remove("dragover");
-			debugLog("[drop] event fired");
-			debugLog(
-				"[drop] dataTransfer.types:",
-				Array.from(e.dataTransfer?.types ?? []),
-			);
-			debugLog(
-				"[drop] dataTransfer.files.length:",
-				e.dataTransfer?.files?.length,
-			);
-			debugLog(
-				"[drop] dataTransfer.items.length:",
-				e.dataTransfer?.items?.length,
-			);
-			const isEmptyTransfer =
-				!e.dataTransfer?.types?.length &&
-				!e.dataTransfer?.files?.length &&
-				!e.dataTransfer?.items?.length;
-			debugLog("[drop] isEmptyTransfer:", isEmptyTransfer);
+      const file = await getDroppedFile(e.dataTransfer);
+      debugLog("[drop] getDroppedFile result:", file);
+      if (!file) {
+        if (isEmptyTransfer) {
+          showError(
+            "No file data received. If you are dragging from Windows Explorer into a WSL browser, this is a known browser limitation — click to select the file instead.",
+          );
+          return;
+        }
 
-			const file = await getDroppedFile(e.dataTransfer);
-			debugLog("[drop] getDroppedFile result:", file);
-			if (!file) {
-				if (isEmptyTransfer) {
-					showError(
-						"No file data received. If you are dragging from Windows Explorer into a WSL browser, this is a known browser limitation — click to select the file instead.",
-					);
-					return;
-				}
+        const droppedText = await getDroppedText(e.dataTransfer);
+        debugLog("[drop] getDroppedText result:", JSON.stringify(droppedText));
+        debugLog(
+          "[drop] isLikelyLocalPathDrop:",
+          isLikelyLocalPathDrop(droppedText),
+        );
+        if (isLikelyLocalPathDrop(droppedText)) {
+          showError(
+            "This browser cannot open path-only drops (for example \\\\wsl.localhost\\...). Click to select the .eml file instead.",
+          );
+          return;
+        }
 
-				const droppedText = await getDroppedText(e.dataTransfer);
-				debugLog("[drop] getDroppedText result:", JSON.stringify(droppedText));
-				debugLog(
-					"[drop] isLikelyLocalPathDrop:",
-					isLikelyLocalPathDrop(droppedText),
-				);
-				if (isLikelyLocalPathDrop(droppedText)) {
-					showError(
-						"This browser cannot open path-only drops (for example \\\\wsl.localhost\\...). Click to select the .eml file instead.",
-					);
-					return;
-				}
+        showError("Please drop a file");
+        return;
+      }
 
-				showError("Please drop a file");
-				return;
-			}
+      readEmlFile(file);
+    });
 
-			readEmlFile(file);
-		});
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        readEmlFile(file);
+      } else {
+        showError("Please select a file");
+      }
+    });
 
-		fileInput.addEventListener("change", (e) => {
-			const file = e.target.files[0];
-			if (file) {
-				readEmlFile(file);
-			} else {
-				showError("Please select a file");
-			}
-		});
+    // Extract a File object from a drag-and-drop event. This function handles
+    // various browser APIs—DataTransferItems, FileSystemHandles, and
+    // webkitGetAsEntry—to ensure file recovery even across complex
+    // environments like WSL.
+    async function getDroppedFile(dataTransfer) {
+      if (!dataTransfer) {
+        debugLog("[getDroppedFile] dataTransfer is null/undefined");
+        return null;
+      }
 
-		// Extract a File object from a drag-and-drop event. This function handles 
-		// various browser APIs—DataTransferItems, FileSystemHandles, and 
-		// webkitGetAsEntry—to ensure file recovery even across complex 
-		// environments like WSL.
-		async function getDroppedFile(dataTransfer) {
-			if (!dataTransfer) {
-				debugLog("[getDroppedFile] dataTransfer is null/undefined");
-				return null;
-			}
+      if (dataTransfer.items?.length) {
+        for (const [i, item] of Array.from(dataTransfer.items).entries()) {
+          debugLog(
+            `[getDroppedFile] items[${i}]: kind=${item.kind} type=${item.type}`,
+          );
+          if (item.kind === "file") {
+            const file = item.getAsFile();
+            debugLog(`[getDroppedFile] items[${i}].getAsFile():`, file);
+            if (file) {
+              return file;
+            }
 
-			if (dataTransfer.items?.length) {
-				for (const [i, item] of Array.from(dataTransfer.items).entries()) {
-					debugLog(
-						`[getDroppedFile] items[${i}]: kind=${item.kind} type=${item.type}`,
-					);
-					if (item.kind === "file") {
-						const file = item.getAsFile();
-						debugLog(`[getDroppedFile] items[${i}].getAsFile():`, file);
-						if (file) {
-							return file;
-						}
+            if (typeof item.getAsFileSystemHandle === "function") {
+              try {
+                const handle = await item.getAsFileSystemHandle();
+                debugLog(
+                  `[getDroppedFile] items[${i}].getAsFileSystemHandle():`,
+                  handle?.kind,
+                );
+                if (handle?.kind === "file") {
+                  return await handle.getFile();
+                }
+              } catch (err) {
+                debugLog(
+                  `[getDroppedFile] items[${i}].getAsFileSystemHandle() threw:`,
+                  err,
+                );
+              }
+            } else {
+              debugLog(
+                `[getDroppedFile] items[${i}].getAsFileSystemHandle not available`,
+              );
+            }
 
-						if (typeof item.getAsFileSystemHandle === "function") {
-							try {
-								const handle = await item.getAsFileSystemHandle();
-								debugLog(
-									`[getDroppedFile] items[${i}].getAsFileSystemHandle():`,
-									handle?.kind,
-								);
-								if (handle?.kind === "file") {
-									return await handle.getFile();
-								}
-							} catch (err) {
-								debugLog(
-									`[getDroppedFile] items[${i}].getAsFileSystemHandle() threw:`,
-									err,
-								);
-							}
-						} else {
-							debugLog(
-								`[getDroppedFile] items[${i}].getAsFileSystemHandle not available`,
-							);
-						}
+            if (typeof item.webkitGetAsEntry === "function") {
+              const entry = item.webkitGetAsEntry();
+              debugLog(
+                `[getDroppedFile] items[${i}].webkitGetAsEntry():`,
+                entry,
+              );
+              if (entry?.isFile) {
+                const entryFile = await new Promise((resolve) => {
+                  entry.file(
+                    (fileEntry) => resolve(fileEntry),
+                    () => resolve(null),
+                  );
+                });
+                debugLog(
+                  `[getDroppedFile] items[${i}] entry.file() result:`,
+                  entryFile,
+                );
+                if (entryFile) {
+                  return entryFile;
+                }
+              }
+            } else {
+              debugLog(
+                `[getDroppedFile] items[${i}].webkitGetAsEntry not available`,
+              );
+            }
+          }
+        }
+      } else {
+        debugLog("[getDroppedFile] dataTransfer.items is empty or unavailable");
+      }
 
-						if (typeof item.webkitGetAsEntry === "function") {
-							const entry = item.webkitGetAsEntry();
-							debugLog(
-								`[getDroppedFile] items[${i}].webkitGetAsEntry():`,
-								entry,
-							);
-							if (entry?.isFile) {
-								const entryFile = await new Promise((resolve) => {
-									entry.file(
-										(fileEntry) => resolve(fileEntry),
-										() => resolve(null),
-									);
-								});
-								debugLog(
-									`[getDroppedFile] items[${i}] entry.file() result:`,
-									entryFile,
-								);
-								if (entryFile) {
-									return entryFile;
-								}
-							}
-						} else {
-							debugLog(
-								`[getDroppedFile] items[${i}].webkitGetAsEntry not available`,
-							);
-						}
-					}
-				}
-			} else {
-				debugLog("[getDroppedFile] dataTransfer.items is empty or unavailable");
-			}
+      if (dataTransfer.files?.length) {
+        debugLog(
+          "[getDroppedFile] falling back to dataTransfer.files[0]:",
+          dataTransfer.files[0],
+        );
+        return dataTransfer.files[0];
+      }
 
-			if (dataTransfer.files?.length) {
-				debugLog(
-					"[getDroppedFile] falling back to dataTransfer.files[0]:",
-					dataTransfer.files[0],
-				);
-				return dataTransfer.files[0];
-			}
+      debugLog("[getDroppedFile] no file found via any method");
+      return null;
+    }
 
-			debugLog("[getDroppedFile] no file found via any method");
-			return null;
-		}
+    // Retrieve the plain text content from a drag-and-drop operation. This
+    // is used as a fallback to detect when a user drops a file path rather
+    // than the file itself, which often happens in virtualized environments.
+    async function getDroppedText(dataTransfer) {
+      if (!dataTransfer?.items?.length) {
+        debugLog("[getDroppedText] no items");
+        return "";
+      }
 
-		// Retrieve the plain text content from a drag-and-drop operation. This 
-		// is used as a fallback to detect when a user drops a file path rather 
-		// than the file itself, which often happens in virtualized environments.
-		async function getDroppedText(dataTransfer) {
-			if (!dataTransfer?.items?.length) {
-				debugLog("[getDroppedText] no items");
-				return "";
-			}
+      for (const [i, item] of Array.from(dataTransfer.items).entries()) {
+        debugLog(
+          `[getDroppedText] items[${i}]: kind=${item.kind} type=${item.type}`,
+        );
+        if (item.kind !== "string") {
+          continue;
+        }
 
-			for (const [i, item] of Array.from(dataTransfer.items).entries()) {
-				debugLog(
-					`[getDroppedText] items[${i}]: kind=${item.kind} type=${item.type}`,
-				);
-				if (item.kind !== "string") {
-					continue;
-				}
+        const value = await new Promise((resolve) => {
+          item.getAsString((text) => resolve(text || ""));
+        });
+        debugLog(
+          `[getDroppedText] items[${i}].getAsString():`,
+          JSON.stringify(value),
+        );
 
-				const value = await new Promise((resolve) => {
-					item.getAsString((text) => resolve(text || ""));
-				});
-				debugLog(
-					`[getDroppedText] items[${i}].getAsString():`,
-					JSON.stringify(value),
-				);
+        if (value.trim()) {
+          return value.trim();
+        }
+      }
 
-				if (value.trim()) {
-					return value.trim();
-				}
-			}
+      return "";
+    }
 
-			return "";
-		}
+    // Check if a dropped string looks like a local file path (e.g., C:\...
+    // or \\wsl\...). This allows the app to provide specific guidance when
+    // a browser lacks the permissions to resolve a path-only drop.
+    function isLikelyLocalPathDrop(value) {
+      if (!value) {
+        return false;
+      }
 
-		// Check if a dropped string looks like a local file path (e.g., C:\... 
-		// or \\wsl\...). This allows the app to provide specific guidance when 
-		// a browser lacks the permissions to resolve a path-only drop.
-		function isLikelyLocalPathDrop(value) {
-			if (!value) {
-				return false;
-			}
+      return (
+        value.startsWith("\\\\") ||
+        value.startsWith("file://") ||
+        /^[a-zA-Z]:\\/.test(value)
+      );
+    }
 
-			return (
-				value.startsWith("\\\\") ||
-				value.startsWith("file://") ||
-				/^[a-zA-Z]:\\/.test(value)
-			);
-		}
+    // Display an error message to the user and hide the main email content.
+    // Providing clear feedback is essential when file processing fails.
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.remove("hidden");
+      emailContent.classList.add("hidden");
+      hidePostProcessReport();
+    }
 
-		// Display an error message to the user and hide the main email content. 
-		// Providing clear feedback is essential when file processing fails.
-		function showError(msg) {
-			errorMsg.textContent = msg;
-			errorMsg.classList.remove("hidden");
-			emailContent.classList.add("hidden");
-			hidePostProcessReport();
-		}
+    // Remove the error message from view once the issue is resolved or
+    // a new file is loaded.
+    function hideError() {
+      errorMsg.classList.add("hidden");
+    }
 
-		// Remove the error message from view once the issue is resolved or 
-		// a new file is loaded.
-		function hideError() {
-			errorMsg.classList.add("hidden");
-		}
+    // Clear the current email data and UI state. This prepares the
+    // application to process a new .eml file.
+    function resetView() {
+      emailContent.classList.add("hidden");
+      hideError();
+      hidePostProcessReport();
+      setProcessing(false);
+      currentHeaders = {};
+      currentBodyHtml = "";
+      currentBodyIsHtml = false;
+      currentOriginalBodyHtml = "";
+      currentCidMap = new Map();
+    }
 
-		// Clear the current email data and UI state. This prepares the 
-		// application to process a new .eml file.
-		function resetView() {
-			emailContent.classList.add("hidden");
-			hideError();
-			hidePostProcessReport();
-			setProcessing(false);
-			currentHeaders = {};
-			currentBodyHtml = "";
-			currentBodyIsHtml = false;
-			currentOriginalBodyHtml = "";
-			currentCidMap = new Map();
-		}
+    // Update the UI to show or hide the loading state. Disabling buttons
+    // and showing a spinner prevents users from triggering conflicting
+    // actions during long tasks.
+    function setProcessing(isProcessing, message = "Processing email…") {
+      if (isProcessing) {
+        processingText.textContent = message;
+        processingIndicator.classList.remove("hidden");
+        processingText.setAttribute("aria-busy", "true");
+        dropZone.setAttribute("aria-disabled", "true");
+        downloadBtn.disabled = true;
+        downloadPngBtn.disabled = true;
+      } else {
+        processingIndicator.classList.add("hidden");
+        processingText.removeAttribute("aria-busy");
+        dropZone.removeAttribute("aria-disabled");
+        downloadBtn.disabled = false;
+        downloadPngBtn.disabled = false;
+      }
+    }
 
-		// Update the UI to show or hide the loading state. Disabling buttons 
-		// and showing a spinner prevents users from triggering conflicting 
-		// actions during long tasks.
-		function setProcessing(isProcessing, message = "Processing email…") {
-			if (isProcessing) {
-				processingText.textContent = message;
-				processingIndicator.classList.remove("hidden");
-				processingText.setAttribute("aria-busy", "true");
-				dropZone.setAttribute("aria-disabled", "true");
-				downloadBtn.disabled = true;
-				downloadPngBtn.disabled = true;
-			} else {
-				processingIndicator.classList.add("hidden");
-				processingText.removeAttribute("aria-busy");
-				dropZone.removeAttribute("aria-disabled");
-				downloadBtn.disabled = false;
-				downloadPngBtn.disabled = false;
-			}
-		}
+    // Hide the diagnostic report and clear its contents. Keeping the
+    // report hidden by default reduces visual noise for most users.
+    function hidePostProcessReport() {
+      postProcessReport.classList.add("hidden");
+      postProcessReport.removeAttribute("open");
+      postProcessSummary.textContent = "Diagnostic details";
+      postProcessReportBody.innerHTML = "";
+    }
 
-		// Hide the diagnostic report and clear its contents. Keeping the 
-		// report hidden by default reduces visual noise for most users.
-		function hidePostProcessReport() {
-			postProcessReport.classList.add("hidden");
-			postProcessReport.removeAttribute("open");
-			postProcessSummary.textContent = "Diagnostic details";
-			postProcessReportBody.innerHTML = "";
-		}
+    // Populate and show the diagnostic report. This provides technical
+    // details about which assets (like images or styles) were successfully
+    // inlined into the HTML.
+    function showPostProcessReport(report, phase = "Export") {
+      if (!report) {
+        hidePostProcessReport();
+        return;
+      }
 
-		// Populate and show the diagnostic report. This provides technical 
-		// details about which assets (like images or styles) were successfully 
-		// inlined into the HTML.
-		function showPostProcessReport(report, phase = "Export") {
-			if (!report) {
-				hidePostProcessReport();
-				return;
-			}
-
-			const totalInlined = report.cidInlined + report.externalInlined;
-			postProcessSummary.textContent = "Diagnostic details";
-			postProcessReportBody.innerHTML = `
+      const totalInlined = report.cidInlined + report.externalInlined;
+      postProcessSummary.textContent = "Diagnostic details";
+      postProcessReportBody.innerHTML = `
 <ul>
   <li>Phase: ${phase}</li>
   <li>Scanned: ${report.referencesSeen}</li>
@@ -514,572 +524,573 @@
   <li>Unresolved CID: ${report.cidMissing}</li>
   <li>Stylesheets: ${report.stylesheetsInlined} inlined, ${report.stylesheetsSkipped} kept</li>
 </ul>`;
-			postProcessReport.classList.remove("hidden");
-			postProcessReport.removeAttribute("open");
-		}
+      postProcessReport.classList.remove("hidden");
+      postProcessReport.removeAttribute("open");
+    }
 
-		// Read the content of a .eml file using a FileReader. This is the 
-		// entry point for file processing after a user selects or drops a file.
-		function readEmlFile(file) {
-			const name = file.name || "";
-			if (!name.toLowerCase().endsWith(".eml")) {
-				showError("Please select a .eml file");
-				return;
-			}
-			hideError();
-			hidePostProcessReport();
-			setProcessing(true, "Processing email…");
-			const reader = new FileReader();
-			reader.onload = async (e) => {
-				try {
-					await parseEmlFromBuffer(e.target.result);
-				} catch (error) {
-					console.error(error);
-					showError("Unable to parse this .eml file");
-				} finally {
-					setProcessing(false);
-				}
-			};
-			reader.onerror = () => {
-				showError("Unable to read this .eml file");
-				setProcessing(false);
-			};
-			reader.readAsArrayBuffer(file);
-		}
+    // Read the content of a .eml file using a FileReader. This is the
+    // entry point for file processing after a user selects or drops a file.
+    function readEmlFile(file) {
+      const name = file.name || "";
+      if (!name.toLowerCase().endsWith(".eml")) {
+        showError("Please select a .eml file");
+        return;
+      }
+      hideError();
+      hidePostProcessReport();
+      setProcessing(true, "Processing email…");
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          await parseEmlFromBuffer(e.target.result);
+        } catch (error) {
+          console.error(error);
+          showError("Unable to parse this .eml file");
+        } finally {
+          setProcessing(false);
+        }
+      };
+      reader.onerror = () => {
+        showError("Unable to read this .eml file");
+        setProcessing(false);
+      };
+      reader.readAsArrayBuffer(file);
+    }
 
-		// Convert a raw file buffer into an email model. We decode as binary-safe
-		// ISO-8859-1 first to ensure we don't lose byte data before parsing 
-		// specific MIME parts.
-		async function parseEmlFromBuffer(arrayBuffer) {
-			// Decode as ISO-8859-1 (Latin-1) for a binary-safe 1:1 byte mapping.
-			// Per-part charset decoding happens later in decodeBytesWithCharset().
-			const raw = new TextDecoder("iso-8859-1").decode(
-				new Uint8Array(arrayBuffer),
-			);
-			const parsed = parseEml(raw);
-			currentCidMap = createCidMap(parsed.attachments);
-			await renderEmail(
-				parsed.headers,
-				parsed.body.content,
-				parsed.body.isHtml,
-			);
-		}
+    // Convert a raw file buffer into an email model. We decode as binary-safe
+    // ISO-8859-1 first to ensure we don't lose byte data before parsing
+    // specific MIME parts.
+    async function parseEmlFromBuffer(arrayBuffer) {
+      // Decode as ISO-8859-1 (Latin-1) for a binary-safe 1:1 byte mapping.
+      // Per-part charset decoding happens later in decodeBytesWithCharset().
+      const raw = new TextDecoder("iso-8859-1").decode(
+        new Uint8Array(arrayBuffer),
+      );
+      const parsed = parseEml(raw);
+      currentCidMap = createCidMap(parsed.attachments);
+      await renderEmail(
+        parsed.headers,
+        parsed.body.content,
+        parsed.body.isHtml,
+      );
+    }
 
-		// Orchestrate the parsing of a raw EML string. It separates headers, 
-		// decodes special characters, and extracts both the message body 
-		// and any attachments.
-		function parseEml(rawMessage) {
-			const { headersText, bodyText } = splitHeadersAndBody(rawMessage);
-			const headers = parseHeaders(headersText);
-			decodeRfc2047Headers(headers);
-			const context = {
-				htmlBodies: [],
-				textBodies: [],
-				attachments: [],
-			};
+    // Orchestrate the parsing of a raw EML string. It separates headers,
+    // decodes special characters, and extracts both the message body
+    // and any attachments.
+    function parseEml(rawMessage) {
+      const { headersText, bodyText } = splitHeadersAndBody(rawMessage);
+      const headers = parseHeaders(headersText);
+      decodeRfc2047Headers(headers);
+      const context = {
+        htmlBodies: [],
+        textBodies: [],
+        attachments: [],
+      };
 
-			parseEntity(headers, bodyText, context);
+      parseEntity(headers, bodyText, context);
 
-			const bestBody = context.htmlBodies[0]
-				? { content: context.htmlBodies[0], isHtml: true }
-				: { content: context.textBodies[0] || "", isHtml: false };
+      const bestBody = context.htmlBodies[0]
+        ? { content: context.htmlBodies[0], isHtml: true }
+        : { content: context.textBodies[0] || "", isHtml: false };
 
-			return {
-				headers,
-				body: bestBody,
-				attachments: context.attachments,
-			};
-		}
+      return {
+        headers,
+        body: bestBody,
+        attachments: context.attachments,
+      };
+    }
 
-		// Locate the boundary between the email headers and the message body. 
-		// Emails follow a strict format where headers and body are separated 
-		// by the first blank line.
-		function splitHeadersAndBody(content) {
-			const splitIdx = content.indexOf("\r\n\r\n");
-			const altSplitIdx = content.indexOf("\n\n");
-			const firstBlankIdx =
-				splitIdx > -1 && (altSplitIdx === -1 || splitIdx < altSplitIdx)
-					? splitIdx
-					: altSplitIdx;
+    // Locate the boundary between the email headers and the message body.
+    // Emails follow a strict format where headers and body are separated
+    // by the first blank line.
+    function splitHeadersAndBody(content) {
+      const splitIdx = content.indexOf("\r\n\r\n");
+      const altSplitIdx = content.indexOf("\n\n");
+      const firstBlankIdx =
+        splitIdx > -1 && (altSplitIdx === -1 || splitIdx < altSplitIdx)
+          ? splitIdx
+          : altSplitIdx;
 
-			if (firstBlankIdx === -1) {
-				return { headersText: content, bodyText: "" };
-			}
+      if (firstBlankIdx === -1) {
+        return { headersText: content, bodyText: "" };
+      }
 
-			const separatorLength =
-				splitIdx > -1 && (altSplitIdx === -1 || splitIdx < altSplitIdx) ? 4 : 2;
-			return {
-				headersText: content.slice(0, firstBlankIdx),
-				bodyText: content.slice(firstBlankIdx + separatorLength),
-			};
-		}
+      const separatorLength =
+        splitIdx > -1 && (altSplitIdx === -1 || splitIdx < altSplitIdx) ? 4 : 2;
+      return {
+        headersText: content.slice(0, firstBlankIdx),
+        bodyText: content.slice(firstBlankIdx + separatorLength),
+      };
+    }
 
-		// Recursively parse MIME entities within the email. This function 
-		// understands multipart messages—where an email can contain many 
-		// versions (text, HTML) and attachments.
-		function parseEntity(headers, bodyText, context) {
-			const contentTypeHeader = getHeader(headers, "content-type") || "text/plain";
-			const contentType = contentTypeHeader.toLowerCase();
-			const boundary = extractBoundary(contentTypeHeader);
+    // Recursively parse MIME entities within the email. This function
+    // understands multipart messages—where an email can contain many
+    // versions (text, HTML) and attachments.
+    function parseEntity(headers, bodyText, context) {
+      const contentTypeHeader =
+        getHeader(headers, "content-type") || "text/plain";
+      const contentType = contentTypeHeader.toLowerCase();
+      const boundary = extractBoundary(contentTypeHeader);
 
-			if (contentType.includes("multipart/") && boundary) {
-				for (const part of splitMultipart(bodyText, boundary)) {
-					const { headersText, bodyText: partBody } = splitHeadersAndBody(part);
-					if (!headersText.trim()) {
-						continue;
-					}
-					const partHeaders = parseHeaders(headersText);
-					parseEntity(partHeaders, partBody, context);
-				}
-				return;
-			}
+      if (contentType.includes("multipart/") && boundary) {
+        for (const part of splitMultipart(bodyText, boundary)) {
+          const { headersText, bodyText: partBody } = splitHeadersAndBody(part);
+          if (!headersText.trim()) {
+            continue;
+          }
+          const partHeaders = parseHeaders(headersText);
+          parseEntity(partHeaders, partBody, context);
+        }
+        return;
+      }
 
-			const parsedPart = parseBodyPart(bodyText, headers);
-			if (parsedPart.kind === "html") {
-				context.htmlBodies.push(parsedPart.text);
-			} else if (parsedPart.kind === "text") {
-				context.textBodies.push(parsedPart.text);
-			}
+      const parsedPart = parseBodyPart(bodyText, headers);
+      if (parsedPart.kind === "html") {
+        context.htmlBodies.push(parsedPart.text);
+      } else if (parsedPart.kind === "text") {
+        context.textBodies.push(parsedPart.text);
+      }
 
-			if (
-				parsedPart.contentId ||
-				parsedPart.disposition === "attachment" ||
-				parsedPart.disposition === "inline"
-			) {
-				context.attachments.push(parsedPart);
-			}
-		}
+      if (
+        parsedPart.contentId ||
+        parsedPart.disposition === "attachment" ||
+        parsedPart.disposition === "inline"
+      ) {
+        context.attachments.push(parsedPart);
+      }
+    }
 
-		// Transform a raw header block into a key-value object. This makes 
-		// it easy to look up specific fields like "Subject" or "From".
-		function parseHeaders(headerText) {
-			const headers = {};
-			const lines = headerText.split(/\r?\n/);
-			let currentKey = "";
+    // Transform a raw header block into a key-value object. This makes
+    // it easy to look up specific fields like "Subject" or "From".
+    function parseHeaders(headerText) {
+      const headers = {};
+      const lines = headerText.split(/\r?\n/);
+      let currentKey = "";
 
-			for (const line of lines) {
-				if (/^\s+/.test(line) && currentKey) {
-					const existing = headers[currentKey];
-					if (Array.isArray(existing)) {
-						existing[existing.length - 1] += ` ${line.trim()}`;
-					} else {
-						headers[currentKey] = `${existing || ""} ${line.trim()}`;
-					}
-				} else {
-					const colonIdx = line.indexOf(":");
-					if (colonIdx > -1) {
-						currentKey = line.slice(0, colonIdx).toLowerCase().trim();
-						const value = line.slice(colonIdx + 1).trim();
-						if (currentKey in headers) {
-							const prev = headers[currentKey];
-							headers[currentKey] = Array.isArray(prev)
-								? [...prev, value]
-								: [prev, value];
-						} else {
-							headers[currentKey] = value;
-						}
-					}
-				}
-			}
-			return headers;
-		}
+      for (const line of lines) {
+        if (/^\s+/.test(line) && currentKey) {
+          const existing = headers[currentKey];
+          if (Array.isArray(existing)) {
+            existing[existing.length - 1] += ` ${line.trim()}`;
+          } else {
+            headers[currentKey] = `${existing || ""} ${line.trim()}`;
+          }
+        } else {
+          const colonIdx = line.indexOf(":");
+          if (colonIdx > -1) {
+            currentKey = line.slice(0, colonIdx).toLowerCase().trim();
+            const value = line.slice(colonIdx + 1).trim();
+            if (currentKey in headers) {
+              const prev = headers[currentKey];
+              headers[currentKey] = Array.isArray(prev)
+                ? [...prev, value]
+                : [prev, value];
+            } else {
+              headers[currentKey] = value;
+            }
+          }
+        }
+      }
+      return headers;
+    }
 
-		// Safely retrieve a header value. Since some headers might appear 
-		// multiple times, this ensures we always get a usable string.
-		function getHeader(headers, key) {
-			const value = headers[key];
-			if (Array.isArray(value)) {
-				return value[0] || "";
-			}
-			return value || "";
-		}
+    // Safely retrieve a header value. Since some headers might appear
+    // multiple times, this ensures we always get a usable string.
+    function getHeader(headers, key) {
+      const value = headers[key];
+      if (Array.isArray(value)) {
+        return value[0] || "";
+      }
+      return value || "";
+    }
 
-		// Batch decode RFC 2047 "encoded-words" in all header fields.
-		function decodeRfc2047Headers(headers) {
-			for (const key of Object.keys(headers)) {
-				const val = headers[key];
-				if (Array.isArray(val)) {
-					headers[key] = val.map(decodeRfc2047);
-				} else if (typeof val === "string") {
-					headers[key] = decodeRfc2047(val);
-				}
-			}
-		}
+    // Batch decode RFC 2047 "encoded-words" in all header fields.
+    function decodeRfc2047Headers(headers) {
+      for (const key of Object.keys(headers)) {
+        const val = headers[key];
+        if (Array.isArray(val)) {
+          headers[key] = val.map(decodeRfc2047);
+        } else if (typeof val === "string") {
+          headers[key] = decodeRfc2047(val);
+        }
+      }
+    }
 
-		// Decode MIME "encoded-words" (like =?UTF-8?B?...?=) used in email 
-		// subjects and addresses. This allows non-ASCII characters to be 
-		// safely displayed.
-		function decodeRfc2047(value) {
-			if (!value || !value.includes("=?")) {
-				return value;
-			}
-			return value.replace(
-				/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g,
-				(_match, charsetStr, encoding, encoded) => {
-					const charset = charsetStr.split("*")[0];
-					try {
-						let bytes;
-						if (encoding.toUpperCase() === "B") {
-							bytes = base64ToUint8Array(encoded);
-						} else {
-							// Q-encoding: underscores are spaces, =XX is hex
-							const qpInput = encoded.replace(/_/g, " ");
-							bytes = decodeQuotedPrintableToBytes(qpInput);
-						}
-						return new TextDecoder(charset).decode(bytes);
-					} catch {
-						return _match;
-					}
-				},
-			);
-		}
+    // Decode MIME "encoded-words" (like =?UTF-8?B?...?=) used in email
+    // subjects and addresses. This allows non-ASCII characters to be
+    // safely displayed.
+    function decodeRfc2047(value) {
+      if (!value || !value.includes("=?")) {
+        return value;
+      }
+      return value.replace(
+        /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g,
+        (_match, charsetStr, encoding, encoded) => {
+          const charset = charsetStr.split("*")[0];
+          try {
+            let bytes;
+            if (encoding.toUpperCase() === "B") {
+              bytes = base64ToUint8Array(encoded);
+            } else {
+              // Q-encoding: underscores are spaces, =XX is hex
+              const qpInput = encoded.replace(/_/g, " ");
+              bytes = decodeQuotedPrintableToBytes(qpInput);
+            }
+            return new TextDecoder(charset).decode(bytes);
+          } catch {
+            return _match;
+          }
+        },
+      );
+    }
 
-		// Extract the unique boundary string from the Content-Type header. 
-		// Boundaries are used in multipart messages to mark where one part 
-		// ends and the next begins.
-		function extractBoundary(contentType) {
-			const boundaryMatch = contentType.match(/boundary="?([^";]+)"?/i);
-			return boundaryMatch ? boundaryMatch[1] : null;
-		}
+    // Extract the unique boundary string from the Content-Type header.
+    // Boundaries are used in multipart messages to mark where one part
+    // ends and the next begins.
+    function extractBoundary(contentType) {
+      const boundaryMatch = contentType.match(/boundary="?([^";]+)"?/i);
+      return boundaryMatch ? boundaryMatch[1] : null;
+    }
 
-		// Split a multipart message body into its individual pieces based 
-		// on a boundary string.
-		function splitMultipart(bodyText, boundary) {
-			const delimiter = `--${boundary}`;
-			const parts = bodyText.split(delimiter);
-			// First part is the preamble (before the first delimiter), last part
-			// is either the closing "--" marker or the epilogue — skip both.
-			return parts
-				.slice(1)
-				.filter((part) => {
-					const trimmed = part.replace(/^\r?\n/, "").trim();
-					return (
-						trimmed &&
-						trimmed !== "--" &&
-						!trimmed.startsWith("--\r") &&
-						!trimmed.startsWith("--\n")
-					);
-				})
-				.map((part) => part.replace(/^\r?\n/, "").trimEnd());
-		}
+    // Split a multipart message body into its individual pieces based
+    // on a boundary string.
+    function splitMultipart(bodyText, boundary) {
+      const delimiter = `--${boundary}`;
+      const parts = bodyText.split(delimiter);
+      // First part is the preamble (before the first delimiter), last part
+      // is either the closing "--" marker or the epilogue — skip both.
+      return parts
+        .slice(1)
+        .filter((part) => {
+          const trimmed = part.replace(/^\r?\n/, "").trim();
+          return (
+            trimmed &&
+            trimmed !== "--" &&
+            !trimmed.startsWith("--\r") &&
+            !trimmed.startsWith("--\n")
+          );
+        })
+        .map((part) => part.replace(/^\r?\n/, "").trimEnd());
+    }
 
-		// Categorize a message part (HTML, text, or binary) and decode its 
-		// contents. This simplifies the high-level logic that decides which 
-		// version of the email to display.
-		function parseBodyPart(bodyText, headers) {
-			const contentTypeHeader =
-				getHeader(headers, "content-type") || "text/plain";
-			const contentType = contentTypeHeader.toLowerCase();
-			const dispositionHeader = headers["content-disposition"] || "";
-			const disposition = (dispositionHeader.split(";")[0] || "")
-				.trim()
-				.toLowerCase();
-			const contentId = normalizeContentId(getHeader(headers, "content-id"));
-			const bytes = decodeToBytes(bodyText, headers);
+    // Categorize a message part (HTML, text, or binary) and decode its
+    // contents. This simplifies the high-level logic that decides which
+    // version of the email to display.
+    function parseBodyPart(bodyText, headers) {
+      const contentTypeHeader =
+        getHeader(headers, "content-type") || "text/plain";
+      const contentType = contentTypeHeader.toLowerCase();
+      const dispositionHeader = headers["content-disposition"] || "";
+      const disposition = (dispositionHeader.split(";")[0] || "")
+        .trim()
+        .toLowerCase();
+      const contentId = normalizeContentId(getHeader(headers, "content-id"));
+      const bytes = decodeToBytes(bodyText, headers);
 
-			if (contentType.includes("text/html")) {
-				return {
-					kind: "html",
-					text: decodeContent(bodyText, headers),
-					bytes,
-					contentType: contentTypeHeader.split(";")[0].trim() || "text/html",
-					disposition,
-					contentId,
-				};
-			}
+      if (contentType.includes("text/html")) {
+        return {
+          kind: "html",
+          text: decodeContent(bodyText, headers),
+          bytes,
+          contentType: contentTypeHeader.split(";")[0].trim() || "text/html",
+          disposition,
+          contentId,
+        };
+      }
 
-			if (contentType.includes("text/plain")) {
-				return {
-					kind: "text",
-					text: decodeContent(bodyText, headers),
-					bytes,
-					contentType: contentTypeHeader.split(";")[0].trim() || "text/plain",
-					disposition,
-					contentId,
-				};
-			}
+      if (contentType.includes("text/plain")) {
+        return {
+          kind: "text",
+          text: decodeContent(bodyText, headers),
+          bytes,
+          contentType: contentTypeHeader.split(";")[0].trim() || "text/plain",
+          disposition,
+          contentId,
+        };
+      }
 
-			return {
-				kind: "binary",
-				text: "",
-				bytes,
-				contentType:
-					contentTypeHeader.split(";")[0].trim() || "application/octet-stream",
-				disposition,
-				contentId,
-			};
-		}
+      return {
+        kind: "binary",
+        text: "",
+        bytes,
+        contentType:
+          contentTypeHeader.split(";")[0].trim() || "application/octet-stream",
+        disposition,
+        contentId,
+      };
+    }
 
-		// Clean up Content-ID headers by removing angle brackets and whitespace. 
-		// This normalization is necessary to reliably link images to their 
-		// locations in the HTML body.
-		function normalizeContentId(contentIdHeader) {
-			const contentId = contentIdHeader.trim();
-			if (!contentId) {
-				return "";
-			}
-			return contentId.replace(/^<|>$/g, "").trim().toLowerCase();
-		}
+    // Clean up Content-ID headers by removing angle brackets and whitespace.
+    // This normalization is necessary to reliably link images to their
+    // locations in the HTML body.
+    function normalizeContentId(contentIdHeader) {
+      const contentId = contentIdHeader.trim();
+      if (!contentId) {
+        return "";
+      }
+      return contentId.replace(/^<|>$/g, "").trim().toLowerCase();
+    }
 
-		// Map Content-IDs to Base64 data URLs. This allows the browser to 
-		// render embedded images directly without needing external files.
-		function createCidMap(attachments) {
-			const map = new Map();
-			for (const attachment of attachments) {
-				if (!attachment.contentId || !attachment.bytes?.length) {
-					continue;
-				}
-				const mimeType = attachment.contentType || "application/octet-stream";
-				const base64 = uint8ArrayToBase64(attachment.bytes);
-				map.set(attachment.contentId, `data:${mimeType};base64,${base64}`);
-			}
-			return map;
-		}
+    // Map Content-IDs to Base64 data URLs. This allows the browser to
+    // render embedded images directly without needing external files.
+    function createCidMap(attachments) {
+      const map = new Map();
+      for (const attachment of attachments) {
+        if (!attachment.contentId || !attachment.bytes?.length) {
+          continue;
+        }
+        const mimeType = attachment.contentType || "application/octet-stream";
+        const base64 = uint8ArrayToBase64(attachment.bytes);
+        map.set(attachment.contentId, `data:${mimeType};base64,${base64}`);
+      }
+      return map;
+    }
 
-		// Decode the content of a message part using the appropriate transfer 
-		// encoding and character set. This ensures that the message is 
-		// readable regardless of its original binary format.
-		function decodeContent(content, headers) {
-			const bytes = decodeToBytes(content, headers);
-			return decodeBytesWithCharset(bytes, headers).trim();
-		}
+    // Decode the content of a message part using the appropriate transfer
+    // encoding and character set. This ensures that the message is
+    // readable regardless of its original binary format.
+    function decodeContent(content, headers) {
+      const bytes = decodeToBytes(content, headers);
+      return decodeBytesWithCharset(bytes, headers).trim();
+    }
 
-		// Convert encoded content (Base64 or Quoted-Printable) back into raw 
-		// bytes. This is a low-level step required before character set 
-		// decoding can take place.
-		function decodeToBytes(content, headers) {
-			const encoding = (
-				getHeader(headers, "content-transfer-encoding") || "7bit"
-			).toLowerCase();
+    // Convert encoded content (Base64 or Quoted-Printable) back into raw
+    // bytes. This is a low-level step required before character set
+    // decoding can take place.
+    function decodeToBytes(content, headers) {
+      const encoding = (
+        getHeader(headers, "content-transfer-encoding") || "7bit"
+      ).toLowerCase();
 
-			if (encoding === "base64") {
-				return base64ToUint8Array(content);
-			}
+      if (encoding === "base64") {
+        return base64ToUint8Array(content);
+      }
 
-			if (encoding === "quoted-printable") {
-				return decodeQuotedPrintableToBytes(content);
-			}
+      if (encoding === "quoted-printable") {
+        return decodeQuotedPrintableToBytes(content);
+      }
 
-			return latin1StringToUint8Array(content);
-		}
+      return latin1StringToUint8Array(content);
+    }
 
-		// Translate raw bytes into a string based on the email's charset 
-		// (e.g., UTF-8, ISO-8859-1). If the specified charset fails, it 
-		// tries common fallbacks to prevent empty or broken displays.
-		function decodeBytesWithCharset(bytes, headers) {
-			const charsetMatch = getHeader(headers, "content-type").match(
-				/charset="?([^";\s]+)"?/i,
-			);
-			const charset = charsetMatch ? charsetMatch[1].toLowerCase() : "utf-8";
+    // Translate raw bytes into a string based on the email's charset
+    // (e.g., UTF-8, ISO-8859-1). If the specified charset fails, it
+    // tries common fallbacks to prevent empty or broken displays.
+    function decodeBytesWithCharset(bytes, headers) {
+      const charsetMatch = getHeader(headers, "content-type").match(
+        /charset="?([^";\s]+)"?/i,
+      );
+      const charset = charsetMatch ? charsetMatch[1].toLowerCase() : "utf-8";
 
-			try {
-				return new TextDecoder(charset).decode(bytes);
-			} catch {
-				try {
-					return new TextDecoder("utf-8").decode(bytes);
-				} catch {
-					return new TextDecoder("iso-8859-1").decode(bytes);
-				}
-			}
-		}
+      try {
+        return new TextDecoder(charset).decode(bytes);
+      } catch {
+        try {
+          return new TextDecoder("utf-8").decode(bytes);
+        } catch {
+          return new TextDecoder("iso-8859-1").decode(bytes);
+        }
+      }
+    }
 
-		// Reconstruct bytes from Quoted-Printable encoding. In this format, 
-		// special characters are represented by an "=" followed by two hex 
-		// digits.
-		function decodeQuotedPrintableToBytes(input) {
-			const normalized = input.replace(/=\r\n|=\n/g, "");
-			const bytes = [];
+    // Reconstruct bytes from Quoted-Printable encoding. In this format,
+    // special characters are represented by an "=" followed by two hex
+    // digits.
+    function decodeQuotedPrintableToBytes(input) {
+      const normalized = input.replace(/=\r\n|=\n/g, "");
+      const bytes = [];
 
-			for (let idx = 0; idx < normalized.length; idx += 1) {
-				const char = normalized[idx];
-				if (
-					char === "=" &&
-					/^[0-9A-Fa-f]{2}$/.test(normalized.slice(idx + 1, idx + 3))
-				) {
-					bytes.push(parseInt(normalized.slice(idx + 1, idx + 3), 16));
-					idx += 2;
-				} else {
-					bytes.push(normalized.charCodeAt(idx) & 0xff);
-				}
-			}
+      for (let idx = 0; idx < normalized.length; idx += 1) {
+        const char = normalized[idx];
+        if (
+          char === "=" &&
+          /^[0-9A-Fa-f]{2}$/.test(normalized.slice(idx + 1, idx + 3))
+        ) {
+          bytes.push(parseInt(normalized.slice(idx + 1, idx + 3), 16));
+          idx += 2;
+        } else {
+          bytes.push(normalized.charCodeAt(idx) & 0xff);
+        }
+      }
 
-			return new Uint8Array(bytes);
-		}
+      return new Uint8Array(bytes);
+    }
 
-		// Map a Latin-1 string directly to a byte array. This is used for 
-		// binary-safe manipulation of raw email data.
-		function latin1StringToUint8Array(input) {
-			const bytes = new Uint8Array(input.length);
-			for (let idx = 0; idx < input.length; idx += 1) {
-				bytes[idx] = input.charCodeAt(idx) & 0xff;
-			}
-			return bytes;
-		}
+    // Map a Latin-1 string directly to a byte array. This is used for
+    // binary-safe manipulation of raw email data.
+    function latin1StringToUint8Array(input) {
+      const bytes = new Uint8Array(input.length);
+      for (let idx = 0; idx < input.length; idx += 1) {
+        bytes[idx] = input.charCodeAt(idx) & 0xff;
+      }
+      return bytes;
+    }
 
-		// Decode a Base64 string into a byte array. Base64 is commonly 
-		// used in emails for attachments and complex character sets.
-		function base64ToUint8Array(input) {
-			const clean = input.replace(/\s/g, "");
-			try {
-				const binary = atob(clean);
-				const bytes = new Uint8Array(binary.length);
-				for (let idx = 0; idx < binary.length; idx += 1) {
-					bytes[idx] = binary.charCodeAt(idx);
-				}
-				return bytes;
-			} catch {
-				return new Uint8Array();
-			}
-		}
+    // Decode a Base64 string into a byte array. Base64 is commonly
+    // used in emails for attachments and complex character sets.
+    function base64ToUint8Array(input) {
+      const clean = input.replace(/\s/g, "");
+      try {
+        const binary = atob(clean);
+        const bytes = new Uint8Array(binary.length);
+        for (let idx = 0; idx < binary.length; idx += 1) {
+          bytes[idx] = binary.charCodeAt(idx);
+        }
+        return bytes;
+      } catch {
+        return new Uint8Array();
+      }
+    }
 
-		// Encode a byte array into a Base64 string. This is used to 
-		// create "data:" URLs for inlining images into the HTML body.
-		function uint8ArrayToBase64(bytes) {
-			let binary = "";
-			const chunkSize = 0x8000;
-			for (let idx = 0; idx < bytes.length; idx += chunkSize) {
-				const chunk = bytes.subarray(idx, idx + chunkSize);
-				binary += String.fromCharCode(...chunk);
-			}
-			return btoa(binary);
-		}
+    // Encode a byte array into a Base64 string. This is used to
+    // create "data:" URLs for inlining images into the HTML body.
+    function uint8ArrayToBase64(bytes) {
+      let binary = "";
+      const chunkSize = 0x8000;
+      for (let idx = 0; idx < bytes.length; idx += chunkSize) {
+        const chunk = bytes.subarray(idx, idx + chunkSize);
+        binary += String.fromCharCode(...chunk);
+      }
+      return btoa(binary);
+    }
 
-		// Generate the visual representation of the email in the browser. 
-		// It builds the header table and injects the (inlined) HTML body 
-		// into a sandboxed iframe for secure viewing.
-		async function renderEmail(headers, bodyHtml, isHtml) {
-			currentHeaders = headers;
-			const displayHeaders = getDisplayHeaders();
+    // Generate the visual representation of the email in the browser.
+    // It builds the header table and injects the (inlined) HTML body
+    // into a sandboxed iframe for secure viewing.
+    async function renderEmail(headers, bodyHtml, isHtml) {
+      currentHeaders = headers;
+      const displayHeaders = getDisplayHeaders();
 
-			let headerHtml = "<dl>";
-			for (const [key, value] of Object.entries(displayHeaders)) {
-				if (value) {
-					headerHtml += `<dt>${key}</dt><dd>${escapeHtml(value)}</dd>`;
-				}
-			}
-			headerHtml += "</dl>";
+      let headerHtml = "<dl>";
+      for (const [key, value] of Object.entries(displayHeaders)) {
+        if (value) {
+          headerHtml += `<dt>${key}</dt><dd>${escapeHtml(value)}</dd>`;
+        }
+      }
+      headerHtml += "</dl>";
 
-			emailHeader.innerHTML = headerHtml;
+      emailHeader.innerHTML = headerHtml;
 
-			let resolvedBody = bodyHtml;
-			if (isHtml) {
-				const inlined = await inlineHtmlAssets(bodyHtml, currentCidMap, {
-					inlineExternal: false,
-				});
-				resolvedBody = inlined.html;
-				showPostProcessReport(inlined.report, "Preview");
-			} else {
-				showPostProcessReport(
-					{
-						referencesSeen: 0,
-						cidInlined: 0,
-						externalInlined: 0,
-						externalFailed: 0,
-						externalSkipped: 0,
-						cidMissing: 0,
-						stylesheetsInlined: 0,
-						stylesheetsSkipped: 0,
-					},
-					"Preview",
-				);
-			}
+      let resolvedBody = bodyHtml;
+      if (isHtml) {
+        const inlined = await inlineHtmlAssets(bodyHtml, currentCidMap, {
+          inlineExternal: false,
+        });
+        resolvedBody = inlined.html;
+        showPostProcessReport(inlined.report, "Preview");
+      } else {
+        showPostProcessReport(
+          {
+            referencesSeen: 0,
+            cidInlined: 0,
+            externalInlined: 0,
+            externalFailed: 0,
+            externalSkipped: 0,
+            cidMissing: 0,
+            stylesheetsInlined: 0,
+            stylesheetsSkipped: 0,
+          },
+          "Preview",
+        );
+      }
 
-			if (isHtml) {
-				const iframe = document.createElement("iframe");
-				// allow-same-origin enables auto-resizing; scripts remain blocked
-				// by omitting allow-scripts.
-				iframe.sandbox = "allow-same-origin";
-				iframe.srcdoc = resolvedBody;
-				iframe.addEventListener("load", () => {
-					try {
-						const innerDoc =
-							iframe.contentDocument || iframe.contentWindow?.document;
-						if (innerDoc?.body) {
-							const contentHeight = innerDoc.documentElement.scrollHeight;
-							iframe.style.height = `${Math.max(contentHeight + 16, 300)}px`;
-						}
-					} catch {
-						// Cross-origin restriction — keep default height
-					}
-				});
-				emailBody.innerHTML = "";
-				emailBody.appendChild(iframe);
-			} else {
-				emailBody.innerHTML = `<pre>${escapeHtml(resolvedBody)}</pre>`;
-			}
+      if (isHtml) {
+        const iframe = document.createElement("iframe");
+        // allow-same-origin enables auto-resizing; scripts remain blocked
+        // by omitting allow-scripts.
+        iframe.sandbox = "allow-same-origin";
+        iframe.srcdoc = resolvedBody;
+        iframe.addEventListener("load", () => {
+          try {
+            const innerDoc =
+              iframe.contentDocument || iframe.contentWindow?.document;
+            if (innerDoc?.body) {
+              const contentHeight = innerDoc.documentElement.scrollHeight;
+              iframe.style.height = `${Math.max(contentHeight + 16, 300)}px`;
+            }
+          } catch {
+            // Cross-origin restriction — keep default height
+          }
+        });
+        emailBody.innerHTML = "";
+        emailBody.appendChild(iframe);
+      } else {
+        emailBody.innerHTML = `<pre>${escapeHtml(resolvedBody)}</pre>`;
+      }
 
-			currentOriginalBodyHtml = bodyHtml;
-			currentBodyHtml = resolvedBody;
-			currentBodyIsHtml = isHtml;
+      currentOriginalBodyHtml = bodyHtml;
+      currentBodyHtml = resolvedBody;
+      currentBodyIsHtml = isHtml;
 
-			emailContent.classList.remove("hidden");
-		}
+      emailContent.classList.remove("hidden");
+    }
 
-		// Select the key headers to display in the UI (From, To, Subject, etc.). 
-		// This filters out the hundreds of technical headers that users 
-		// rarely need to see.
-		function getDisplayHeaders() {
-			return {
-				From: getHeader(currentHeaders, "from"),
-				To: getHeader(currentHeaders, "to"),
-				Cc: getHeader(currentHeaders, "cc"),
-				Subject: getHeader(currentHeaders, "subject") || "(No Subject)",
-				Date: getHeader(currentHeaders, "date"),
-			};
-		}
+    // Select the key headers to display in the UI (From, To, Subject, etc.).
+    // This filters out the hundreds of technical headers that users
+    // rarely need to see.
+    function getDisplayHeaders() {
+      return {
+        From: getHeader(currentHeaders, "from"),
+        To: getHeader(currentHeaders, "to"),
+        Cc: getHeader(currentHeaders, "cc"),
+        Subject: getHeader(currentHeaders, "subject") || "(No Subject)",
+        Date: getHeader(currentHeaders, "date"),
+      };
+    }
 
-		// Create a styled HTML definition list for email headers. This 
-		// is used when exporting the email to a standalone file.
-		function buildHeaderHtml(displayHeaders) {
-			let headerHtml =
-				'<dl style="font-family: system-ui, sans-serif; margin-bottom: 0.5rem;">';
-			for (const [key, value] of Object.entries(displayHeaders)) {
-				if (value) {
-					headerHtml += `<dt style="font-weight: 600; color: #666;"><strong>${key}:</strong></dt><dd style="margin: 0 0 0.15rem 0;">${escapeHtml(value)}</dd>`;
-				}
-			}
-			headerHtml += "</dl>";
-			return headerHtml;
-		}
+    // Create a styled HTML definition list for email headers. This
+    // is used when exporting the email to a standalone file.
+    function buildHeaderHtml(displayHeaders) {
+      let headerHtml =
+        '<dl style="font-family: system-ui, sans-serif; margin-bottom: 0.5rem;">';
+      for (const [key, value] of Object.entries(displayHeaders)) {
+        if (value) {
+          headerHtml += `<dt style="font-weight: 600; color: #666;"><strong>${key}:</strong></dt><dd style="margin: 0 0 0.15rem 0;">${escapeHtml(value)}</dd>`;
+        }
+      }
+      headerHtml += "</dl>";
+      return headerHtml;
+    }
 
-		// Prepare the email body for export. During export, we attempt 
-		// to inline ALL assets (including external images) so the resulting 
-		// file is completely self-contained.
-		async function getExportBody() {
-			if (currentBodyIsHtml) {
-				const inlined = await inlineHtmlAssets(
-					currentOriginalBodyHtml || currentBodyHtml,
-					currentCidMap,
-					{ inlineExternal: true },
-				);
-				showPostProcessReport(inlined.report, "Export");
-				return inlined.html;
-			}
+    // Prepare the email body for export. During export, we attempt
+    // to inline ALL assets (including external images) so the resulting
+    // file is completely self-contained.
+    async function getExportBody() {
+      if (currentBodyIsHtml) {
+        const inlined = await inlineHtmlAssets(
+          currentOriginalBodyHtml || currentBodyHtml,
+          currentCidMap,
+          { inlineExternal: true },
+        );
+        showPostProcessReport(inlined.report, "Export");
+        return inlined.html;
+      }
 
-			showPostProcessReport(
-				{
-					referencesSeen: 0,
-					cidInlined: 0,
-					externalInlined: 0,
-					externalFailed: 0,
-					externalSkipped: 0,
-					cidMissing: 0,
-					stylesheetsInlined: 0,
-					stylesheetsSkipped: 0,
-				},
-				"Export",
-			);
-			return `<pre>${escapeHtml(currentBodyHtml)}</pre>`;
-		}
+      showPostProcessReport(
+        {
+          referencesSeen: 0,
+          cidInlined: 0,
+          externalInlined: 0,
+          externalFailed: 0,
+          externalSkipped: 0,
+          cidMissing: 0,
+          stylesheetsInlined: 0,
+          stylesheetsSkipped: 0,
+        },
+        "Export",
+      );
+      return `<pre>${escapeHtml(currentBodyHtml)}</pre>`;
+    }
 
-		// Assemble the final HTML document for export. It combines 
-		// headers, styles, and the email body into a single, cohesive file.
-		function buildExportDocumentHtml(headerHtml, exportBody, options = {}) {
-			const { forceLightMode = false } = options;
-			const lightModeStyle = forceLightMode
-				? ":root, html, body, * { color-scheme: light !important; }\n"
-				: "";
-			return `<!DOCTYPE html>
+    // Assemble the final HTML document for export. It combines
+    // headers, styles, and the email body into a single, cohesive file.
+    function buildExportDocumentHtml(headerHtml, exportBody, options = {}) {
+      const { forceLightMode = false } = options;
+      const lightModeStyle = forceLightMode
+        ? ":root, html, body, * { color-scheme: light !important; }\n"
+        : "";
+      return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1112,625 +1123,624 @@
   </main>
 </body>
 </html>`;
-		}
+    }
 
-		// Open a "Save As" dialog for a given data blob. This is the 
-		// final step in the download process.
-		function triggerBlobDownload(blob, filename) {
-			const url = URL.createObjectURL(blob);
-			const anchor = document.createElement("a");
-			anchor.href = url;
-			anchor.download = filename;
-			anchor.click();
-			setTimeout(() => URL.revokeObjectURL(url), 60000);
-		}
+    // Open a "Save As" dialog for a given data blob. This is the
+    // final step in the download process.
+    function triggerBlobDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
 
-		// Handle the "Download HTML" action. It bundles the email into 
-		// a standalone .html file that can be shared or archived.
-		async function downloadHtml() {
-			const subject = getHeader(currentHeaders, "subject") || "email";
-			const filename = `${subject.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.html`;
-			setProcessing(true, "Preparing HTML download…");
-			try {
-				const displayHeaders = getDisplayHeaders();
-				const headerHtml = buildHeaderHtml(displayHeaders);
-				const exportBody = await getExportBody();
-				const fullHtml = buildExportDocumentHtml(headerHtml, exportBody);
-				const blob = new Blob([fullHtml], { type: "text/html" });
-				triggerBlobDownload(blob, filename);
-			} finally {
-				setProcessing(false);
-			}
-		}
+    // Handle the "Download HTML" action. It bundles the email into
+    // a standalone .html file that can be shared or archived.
+    async function downloadHtml() {
+      const subject = getHeader(currentHeaders, "subject") || "email";
+      const filename = `${subject.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.html`;
+      setProcessing(true, "Preparing HTML download…");
+      try {
+        const displayHeaders = getDisplayHeaders();
+        const headerHtml = buildHeaderHtml(displayHeaders);
+        const exportBody = await getExportBody();
+        const fullHtml = buildExportDocumentHtml(headerHtml, exportBody);
+        const blob = new Blob([fullHtml], { type: "text/html" });
+        triggerBlobDownload(blob, filename);
+      } finally {
+        setProcessing(false);
+      }
+    }
 
-		// Handle the "Download PNG" action. It renders the email in a 
-		// hidden iframe and uses html2canvas to capture it as an image.
-		async function downloadPng() {
-			const subject = getHeader(currentHeaders, "subject") || "email";
-			const filename = `${subject.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.png`;
-			setProcessing(true, "Preparing PNG download…");
-			try {
-				const displayHeaders = getDisplayHeaders();
-				const headerHtml = buildHeaderHtml(displayHeaders);
-				const exportBody = await getExportBody();
-				const pngBody = currentBodyIsHtml
-					? stripDarkModeForPng(exportBody)
-					: exportBody;
-				const fullHtml = buildExportDocumentHtml(headerHtml, pngBody, {
-					forceLightMode: true,
-				});
-				const pngBlob = await htmlToPngBlob(fullHtml);
-				triggerBlobDownload(pngBlob, filename);
-			} catch (error) {
-				console.error(error);
-				showError(`Unable to generate PNG: ${error.message}`);
-			} finally {
-				setProcessing(false);
-			}
-		}
+    // Handle the "Download PNG" action. It renders the email in a
+    // hidden iframe and uses html2canvas to capture it as an image.
+    async function downloadPng() {
+      const subject = getHeader(currentHeaders, "subject") || "email";
+      const filename = `${subject.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.png`;
+      setProcessing(true, "Preparing PNG download…");
+      try {
+        const displayHeaders = getDisplayHeaders();
+        const headerHtml = buildHeaderHtml(displayHeaders);
+        const exportBody = await getExportBody();
+        const pngBody = currentBodyIsHtml
+          ? stripDarkModeForPng(exportBody)
+          : exportBody;
+        const fullHtml = buildExportDocumentHtml(headerHtml, pngBody, {
+          forceLightMode: true,
+        });
+        const pngBlob = await htmlToPngBlob(fullHtml);
+        triggerBlobDownload(pngBlob, filename);
+      } catch (error) {
+        console.error(error);
+        showError(`Unable to generate PNG: ${error.message}`);
+      } finally {
+        setProcessing(false);
+      }
+    }
 
-		// Convert the HTML content into a PNG image blob. This process 
-		// uses a temporary iframe to ensure that the email is rendered 
-		// exactly as it would appear in a browser before capture.
-		async function htmlToPngBlob(fullHtml) {
-			const html2canvas = await loadHtml2Canvas();
+    // Convert the HTML content into a PNG image blob. This process
+    // uses a temporary iframe to ensure that the email is rendered
+    // exactly as it would appear in a browser before capture.
+    async function htmlToPngBlob(fullHtml) {
+      const html2canvas = await loadHtml2Canvas();
 
-			const iframe = document.createElement("iframe");
-			iframe.setAttribute("aria-hidden", "true");
-			iframe.style.position = "fixed";
-			iframe.style.left = "-99999px";
-			iframe.style.top = "0";
-			iframe.style.width = "980px";
-			iframe.style.height = "1px";
-			iframe.style.border = "none";
-			iframe.style.zIndex = "-1";
-			iframe.style.pointerEvents = "none";
-			iframe.style.colorScheme = "light";
-			document.body.appendChild(iframe);
+      const iframe = document.createElement("iframe");
+      iframe.setAttribute("aria-hidden", "true");
+      iframe.style.position = "fixed";
+      iframe.style.left = "-99999px";
+      iframe.style.top = "0";
+      iframe.style.width = "980px";
+      iframe.style.height = "1px";
+      iframe.style.border = "none";
+      iframe.style.zIndex = "-1";
+      iframe.style.pointerEvents = "none";
+      iframe.style.colorScheme = "light";
+      document.body.appendChild(iframe);
 
-			try {
-				const iframeDoc =
-					iframe.contentDocument || iframe.contentWindow.document;
-				iframeDoc.open();
-				iframeDoc.write(fullHtml);
-				iframeDoc.close();
+      try {
+        const iframeDoc =
+          iframe.contentDocument || iframe.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(fullHtml);
+        iframeDoc.close();
 
-				// Wait for images to load inside the iframe
-				await new Promise((resolve) => {
-					const images = [...iframeDoc.querySelectorAll("img")];
-					let pending = images.length;
-					if (pending === 0) {
-						resolve();
-						return;
-					}
-					const done = () => {
-						if (--pending <= 0) resolve();
-					};
-					images.forEach((img) => {
-						if (img.complete) {
-							done();
-							return;
-						}
-						img.addEventListener("load", done);
-						img.addEventListener("error", done);
-					});
-					setTimeout(resolve, 15000);
-				});
+        // Wait for images to load inside the iframe
+        await new Promise((resolve) => {
+          const images = [...iframeDoc.querySelectorAll("img")];
+          let pending = images.length;
+          if (pending === 0) {
+            resolve();
+            return;
+          }
+          const done = () => {
+            if (--pending <= 0) resolve();
+          };
+          images.forEach((img) => {
+            if (img.complete) {
+              done();
+              return;
+            }
+            img.addEventListener("load", done);
+            img.addEventListener("error", done);
+          });
+          setTimeout(resolve, 15000);
+        });
 
-				// Let the iframe body size itself to content
-				iframe.style.height = `${iframeDoc.documentElement.scrollHeight}px`;
+        // Let the iframe body size itself to content
+        iframe.style.height = `${iframeDoc.documentElement.scrollHeight}px`;
 
-				const renderTarget = iframeDoc.body;
-				const scale = Math.min(window.devicePixelRatio || 1, 2);
-				const canvas = await html2canvas(renderTarget, {
-					backgroundColor: "#f5f5f5",
-					scale,
-					useCORS: true,
-					allowTaint: false,
-					logging: false,
-					windowWidth: 980,
-					width: 980,
-				});
+        const renderTarget = iframeDoc.body;
+        const scale = Math.min(window.devicePixelRatio || 1, 2);
+        const canvas = await html2canvas(renderTarget, {
+          backgroundColor: "#f5f5f5",
+          scale,
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+          windowWidth: 980,
+          width: 980,
+        });
 
-				const blob = await new Promise((resolve) =>
-					canvas.toBlob(resolve, "image/png"),
-				);
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/png"),
+        );
 
-				if (!blob) {
-					throw new Error("Unable to encode PNG output");
-				}
+        if (!blob) {
+          throw new Error("Unable to encode PNG output");
+        }
 
-				return blob;
-			} finally {
-				document.body.removeChild(iframe);
-			}
-		}
+        return blob;
+      } finally {
+        document.body.removeChild(iframe);
+      }
+    }
 
-		// Ensure that the html2canvas library is available. To keep the 
-		// initial page load small, the library is only loaded when the 
-		// user first requests a PNG export.
-		async function loadHtml2Canvas() {
-			if (window.html2canvas) {
-				return window.html2canvas;
-			}
+    // Ensure that the html2canvas library is available. To keep the
+    // initial page load small, the library is only loaded when the
+    // user first requests a PNG export.
+    async function loadHtml2Canvas() {
+      if (window.html2canvas) {
+        return window.html2canvas;
+      }
 
-			await new Promise((resolve, reject) => {
-				const existing = document.querySelector(
-					'script[data-role="html2canvas"]',
-				);
-				if (existing) {
-					existing.remove();
-				}
+      await new Promise((resolve, reject) => {
+        const existing = document.querySelector(
+          'script[data-role="html2canvas"]',
+        );
+        if (existing) {
+          existing.remove();
+        }
 
-				const script = document.createElement("script");
-				script.src =
-					"https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js";
-				script.async = true;
-				script.setAttribute("data-role", "html2canvas");
-				script.onload = resolve;
-				script.onerror = () => reject(new Error("Failed to load html2canvas"));
-				document.head.appendChild(script);
-			});
+        const script = document.createElement("script");
+        script.src =
+          "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js";
+        script.async = true;
+        script.setAttribute("data-role", "html2canvas");
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Failed to load html2canvas"));
+        document.head.appendChild(script);
+      });
 
-			if (!window.html2canvas) {
-				throw new Error("html2canvas did not initialize");
-			}
+      if (!window.html2canvas) {
+        throw new Error("html2canvas did not initialize");
+      }
 
-			return window.html2canvas;
-		}
+      return window.html2canvas;
+    }
 
-		// Strip dark mode styles from the HTML before PNG export. This 
-		// guarantees a consistent light-mode look for the resulting image, 
-		// regardless of the user's system theme.
-		function stripDarkModeForPng(html) {
-			const parser = new DOMParser();
-			const doc = parser.parseFromString(html, "text/html");
+    // Strip dark mode styles from the HTML before PNG export. This
+    // guarantees a consistent light-mode look for the resulting image,
+    // regardless of the user's system theme.
+    function stripDarkModeForPng(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
 
-			const darkModeMeta = doc.querySelectorAll(
-				'meta[name="color-scheme"], meta[name="supported-color-schemes"]',
-			);
-			darkModeMeta.forEach((metaTag) => {
-				metaTag.remove();
-			});
+      const darkModeMeta = doc.querySelectorAll(
+        'meta[name="color-scheme"], meta[name="supported-color-schemes"]',
+      );
+      darkModeMeta.forEach((metaTag) => {
+        metaTag.remove();
+      });
 
-			const styleTags = [...doc.querySelectorAll("style")];
-			styleTags.forEach((styleTag) => {
-				const css = styleTag.textContent || "";
-				styleTag.textContent = removeDarkColorSchemeMediaBlocks(css);
-			});
+      const styleTags = [...doc.querySelectorAll("style")];
+      styleTags.forEach((styleTag) => {
+        const css = styleTag.textContent || "";
+        styleTag.textContent = removeDarkColorSchemeMediaBlocks(css);
+      });
 
-			return doc.body.innerHTML;
-		}
+      return doc.body.innerHTML;
+    }
 
-		// Remove @media (prefers-color-scheme: dark) blocks from CSS. 
-		// This is a helper for stripDarkModeForPng that targets theme 
-		// overrides in the email's stylesheet.
-		function removeDarkColorSchemeMediaBlocks(cssText) {
-			let output = "";
-			let cursor = 0;
+    // Remove @media (prefers-color-scheme: dark) blocks from CSS.
+    // This is a helper for stripDarkModeForPng that targets theme
+    // overrides in the email's stylesheet.
+    function removeDarkColorSchemeMediaBlocks(cssText) {
+      let output = "";
+      let cursor = 0;
 
-			while (cursor < cssText.length) {
-				const mediaIndex = cssText.indexOf("@media", cursor);
-				if (mediaIndex === -1) {
-					output += cssText.slice(cursor);
-					break;
-				}
+      while (cursor < cssText.length) {
+        const mediaIndex = cssText.indexOf("@media", cursor);
+        if (mediaIndex === -1) {
+          output += cssText.slice(cursor);
+          break;
+        }
 
-				output += cssText.slice(cursor, mediaIndex);
-				const blockStart = cssText.indexOf("{", mediaIndex);
-				if (blockStart === -1) {
-					output += cssText.slice(mediaIndex);
-					break;
-				}
+        output += cssText.slice(cursor, mediaIndex);
+        const blockStart = cssText.indexOf("{", mediaIndex);
+        if (blockStart === -1) {
+          output += cssText.slice(mediaIndex);
+          break;
+        }
 
-				let depth = 1;
-				let blockEnd = blockStart + 1;
-				while (blockEnd < cssText.length && depth > 0) {
-					const char = cssText[blockEnd];
-					if (char === "{") {
-						depth += 1;
-					} else if (char === "}") {
-						depth -= 1;
-					}
-					blockEnd += 1;
-				}
+        let depth = 1;
+        let blockEnd = blockStart + 1;
+        while (blockEnd < cssText.length && depth > 0) {
+          const char = cssText[blockEnd];
+          if (char === "{") {
+            depth += 1;
+          } else if (char === "}") {
+            depth -= 1;
+          }
+          blockEnd += 1;
+        }
 
-				const mediaHeader = cssText.slice(mediaIndex, blockStart);
-				const isDarkMedia = /prefers-color-scheme\s*:\s*dark/i.test(
-					mediaHeader,
-				);
-				if (!isDarkMedia) {
-					output += cssText.slice(mediaIndex, blockEnd);
-				}
+        const mediaHeader = cssText.slice(mediaIndex, blockStart);
+        const isDarkMedia = /prefers-color-scheme\s*:\s*dark/i.test(
+          mediaHeader,
+        );
+        if (!isDarkMedia) {
+          output += cssText.slice(mediaIndex, blockEnd);
+        }
 
-				cursor = blockEnd;
-			}
+        cursor = blockEnd;
+      }
 
-			return output;
-		}
+      return output;
+    }
 
-		// Inline all local and external assets into the HTML. This 
-		// creates a "portable" document where images and styles are 
-		// embedded directly, rather than linked to external URLs.
-		async function inlineHtmlAssets(html, cidMap, options = {}) {
-			const { inlineExternal = true } = options;
-			const resourceCache = new Map();
-			const runNetworkTask = createConcurrencyLimiter(MAX_CONCURRENT_FETCHES);
-			const report = {
-				referencesSeen: 0,
-				cidInlined: 0,
-				externalInlined: 0,
-				externalFailed: 0,
-				externalSkipped: 0,
-				cidMissing: 0,
-				stylesheetsInlined: 0,
-				stylesheetsSkipped: 0,
-			};
-			const resolveUrl = (resourceUrl, baseUrl = null) =>
-				resolveResourceUrl(resourceUrl, cidMap, baseUrl, {
-					inlineExternal,
-					cache: resourceCache,
-					report,
-					networkTaskRunner: runNetworkTask,
-				});
+    // Inline all local and external assets into the HTML. This
+    // creates a "portable" document where images and styles are
+    // embedded directly, rather than linked to external URLs.
+    async function inlineHtmlAssets(html, cidMap, options = {}) {
+      const { inlineExternal = true } = options;
+      const resourceCache = new Map();
+      const runNetworkTask = createConcurrencyLimiter(MAX_CONCURRENT_FETCHES);
+      const report = {
+        referencesSeen: 0,
+        cidInlined: 0,
+        externalInlined: 0,
+        externalFailed: 0,
+        externalSkipped: 0,
+        cidMissing: 0,
+        stylesheetsInlined: 0,
+        stylesheetsSkipped: 0,
+      };
+      const resolveUrl = (resourceUrl, baseUrl = null) =>
+        resolveResourceUrl(resourceUrl, cidMap, baseUrl, {
+          inlineExternal,
+          cache: resourceCache,
+          report,
+          networkTaskRunner: runNetworkTask,
+        });
 
-			const parser = new DOMParser();
-			const documentNode = parser.parseFromString(html, "text/html");
+      const parser = new DOMParser();
+      const documentNode = parser.parseFromString(html, "text/html");
 
-			const srcElements = [...documentNode.querySelectorAll("[src]")];
-			await Promise.all(
-				srcElements.map(async (element) => {
-					const src = element.getAttribute("src");
-					if (!src) {
-						return;
-					}
-					const resolved = await resolveUrl(src);
-					if (resolved) {
-						element.setAttribute("src", resolved);
-					}
-				}),
-			);
+      const srcElements = [...documentNode.querySelectorAll("[src]")];
+      await Promise.all(
+        srcElements.map(async (element) => {
+          const src = element.getAttribute("src");
+          if (!src) {
+            return;
+          }
+          const resolved = await resolveUrl(src);
+          if (resolved) {
+            element.setAttribute("src", resolved);
+          }
+        }),
+      );
 
-			const srcsetElements = [
-				...documentNode.querySelectorAll("source[srcset]"),
-			];
-			await Promise.all(
-				srcsetElements.map(async (sourceElement) => {
-					const srcset = sourceElement.getAttribute("srcset");
-					if (!srcset) {
-						return;
-					}
-					const rewrittenSrcset = await rewriteSrcset(srcset, resolveUrl);
-					sourceElement.setAttribute("srcset", rewrittenSrcset);
-				}),
-			);
+      const srcsetElements = [
+        ...documentNode.querySelectorAll("source[srcset]"),
+      ];
+      await Promise.all(
+        srcsetElements.map(async (sourceElement) => {
+          const srcset = sourceElement.getAttribute("srcset");
+          if (!srcset) {
+            return;
+          }
+          const rewrittenSrcset = await rewriteSrcset(srcset, resolveUrl);
+          sourceElement.setAttribute("srcset", rewrittenSrcset);
+        }),
+      );
 
-			const bgElements = [...documentNode.querySelectorAll("[background]")];
-			await Promise.all(
-				bgElements.map(async (element) => {
-					const bg = element.getAttribute("background");
-					if (!bg) {
-						return;
-					}
-					const resolved = await resolveUrl(bg);
-					if (resolved) {
-						element.setAttribute("background", resolved);
-					} else {
-						element.removeAttribute("background");
-					}
-				}),
-			);
+      const bgElements = [...documentNode.querySelectorAll("[background]")];
+      await Promise.all(
+        bgElements.map(async (element) => {
+          const bg = element.getAttribute("background");
+          if (!bg) {
+            return;
+          }
+          const resolved = await resolveUrl(bg);
+          if (resolved) {
+            element.setAttribute("background", resolved);
+          } else {
+            element.removeAttribute("background");
+          }
+        }),
+      );
 
-			const styleElements = [...documentNode.querySelectorAll("style")];
-			await Promise.all(
-				styleElements.map(async (styleElement) => {
-					styleElement.textContent = await rewriteCssText(
-						styleElement.textContent || "",
-						resolveUrl,
-					);
-				}),
-			);
+      const styleElements = [...documentNode.querySelectorAll("style")];
+      await Promise.all(
+        styleElements.map(async (styleElement) => {
+          styleElement.textContent = await rewriteCssText(
+            styleElement.textContent || "",
+            resolveUrl,
+          );
+        }),
+      );
 
-			const inlineStyleElements = [...documentNode.querySelectorAll("[style]")];
-			await Promise.all(
-				inlineStyleElements.map(async (element) => {
-					const styleValue = element.getAttribute("style");
-					if (!styleValue) {
-						return;
-					}
-					element.setAttribute(
-						"style",
-						await rewriteCssText(styleValue, resolveUrl),
-					);
-				}),
-			);
+      const inlineStyleElements = [...documentNode.querySelectorAll("[style]")];
+      await Promise.all(
+        inlineStyleElements.map(async (element) => {
+          const styleValue = element.getAttribute("style");
+          if (!styleValue) {
+            return;
+          }
+          element.setAttribute(
+            "style",
+            await rewriteCssText(styleValue, resolveUrl),
+          );
+        }),
+      );
 
-			if (inlineExternal) {
-				const stylesheetLinks = [
-					...documentNode.querySelectorAll('link[rel="stylesheet"][href]'),
-				];
-				await Promise.all(
-					stylesheetLinks.map(async (linkElement) => {
-						const href = linkElement.getAttribute("href");
-						if (!href) {
-							return;
-						}
-						try {
-							const absoluteUrl = toAbsoluteUrl(href);
-							if (!absoluteUrl) {
-								return;
-							}
-							const cssResponse = await runNetworkTask(() =>
-								fetch(absoluteUrl),
-							);
-							if (!cssResponse.ok) {
-								return;
-							}
-							const cssText = await cssResponse.text();
-							const rewrittenCss = await rewriteCssText(
-								cssText,
-								resolveUrl,
-								absoluteUrl,
-							);
-							const inlineStyle = documentNode.createElement("style");
-							inlineStyle.textContent = rewrittenCss;
-							linkElement.replaceWith(inlineStyle);
-							report.stylesheetsInlined += 1;
-						} catch {
-							// Keep original link when fetch is blocked by CORS or network policies.
-							report.stylesheetsSkipped += 1;
-						}
-					}),
-				);
-			}
+      if (inlineExternal) {
+        const stylesheetLinks = [
+          ...documentNode.querySelectorAll('link[rel="stylesheet"][href]'),
+        ];
+        await Promise.all(
+          stylesheetLinks.map(async (linkElement) => {
+            const href = linkElement.getAttribute("href");
+            if (!href) {
+              return;
+            }
+            try {
+              const absoluteUrl = toAbsoluteUrl(href);
+              if (!absoluteUrl) {
+                return;
+              }
+              const cssResponse = await runNetworkTask(() =>
+                fetch(absoluteUrl),
+              );
+              if (!cssResponse.ok) {
+                return;
+              }
+              const cssText = await cssResponse.text();
+              const rewrittenCss = await rewriteCssText(
+                cssText,
+                resolveUrl,
+                absoluteUrl,
+              );
+              const inlineStyle = documentNode.createElement("style");
+              inlineStyle.textContent = rewrittenCss;
+              linkElement.replaceWith(inlineStyle);
+              report.stylesheetsInlined += 1;
+            } catch {
+              // Keep original link when fetch is blocked by CORS or network policies.
+              report.stylesheetsSkipped += 1;
+            }
+          }),
+        );
+      }
 
-			return { html: documentNode.documentElement.outerHTML, report };
-		}
+      return { html: documentNode.documentElement.outerHTML, report };
+    }
 
-		// Process 'srcset' attributes to inline multiple image sources. 
-		// This ensures high-resolution displays still show the correct 
-		// embedded images.
-		async function rewriteSrcset(srcset, resolveUrl) {
-			const parts = srcset
-				.split(",")
-				.map((part) => part.trim())
-				.filter(Boolean);
-			const rewrittenParts = await Promise.all(
-				parts.map(async (part) => {
-					const [url, descriptor] = part.split(/\s+/, 2);
-					const resolved = await resolveUrl(url);
-					return descriptor
-						? `${resolved || url} ${descriptor}`
-						: resolved || url;
-				}),
-			);
+    // Process 'srcset' attributes to inline multiple image sources.
+    // This ensures high-resolution displays still show the correct
+    // embedded images.
+    async function rewriteSrcset(srcset, resolveUrl) {
+      const parts = srcset
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const rewrittenParts = await Promise.all(
+        parts.map(async (part) => {
+          const [url, descriptor] = part.split(/\s+/, 2);
+          const resolved = await resolveUrl(url);
+          return descriptor
+            ? `${resolved || url} ${descriptor}`
+            : resolved || url;
+        }),
+      );
 
-			return rewrittenParts.join(", ");
-		}
+      return rewrittenParts.join(", ");
+    }
 
-		// Inline assets referenced within CSS 'url()' functions. It 
-		// processes both background images and fonts to make the 
-		// stylesheet self-contained.
-		async function rewriteCssText(cssText, resolveUrl, baseUrl = null) {
-			return replaceAsync(
-				cssText,
-				/url\(([^)]+)\)/gi,
-				async (match, rawUrl) => {
-					const cleanedUrl = rawUrl.trim().replace(/^['"]|['"]$/g, "");
-					const resolved = await resolveUrl(cleanedUrl, baseUrl);
-					if (!resolved) {
-						return match;
-					}
-					return `url("${resolved}")`;
-				},
-			);
-		}
+    // Inline assets referenced within CSS 'url()' functions. It
+    // processes both background images and fonts to make the
+    // stylesheet self-contained.
+    async function rewriteCssText(cssText, resolveUrl, baseUrl = null) {
+      return replaceAsync(
+        cssText,
+        /url\(([^)]+)\)/gi,
+        async (match, rawUrl) => {
+          const cleanedUrl = rawUrl.trim().replace(/^['"]|['"]$/g, "");
+          const resolved = await resolveUrl(cleanedUrl, baseUrl);
+          if (!resolved) {
+            return match;
+          }
+          return `url("${resolved}")`;
+        },
+      );
+    }
 
-		// Resolve a single resource URL to a Base64 data string. It 
-		// pulls from the CID map for embedded images or fetches 
-		// external URLs via a proxy if necessary.
-		async function resolveResourceUrl(
-			resourceUrl,
-			cidMap,
-			baseUrl = null,
-			options = {},
-		) {
-			const {
-				inlineExternal = true,
-				cache = new Map(),
-				report = {
-					referencesSeen: 0,
-					cidInlined: 0,
-					externalInlined: 0,
-					externalFailed: 0,
-					externalSkipped: 0,
-					cidMissing: 0,
-					stylesheetsInlined: 0,
-					stylesheetsSkipped: 0,
-				},
-				networkTaskRunner = (task) => task(),
-			} = options;
-			const trimmedUrl = resourceUrl.trim();
-			if (
-				!trimmedUrl ||
-				trimmedUrl.startsWith("data:") ||
-				trimmedUrl.startsWith("mailto:") ||
-				trimmedUrl.startsWith("#")
-			) {
-				return null;
-			}
+    // Resolve a single resource URL to a Base64 data string. It
+    // pulls from the CID map for embedded images or fetches
+    // external URLs via a proxy if necessary.
+    async function resolveResourceUrl(
+      resourceUrl,
+      cidMap,
+      baseUrl = null,
+      options = {},
+    ) {
+      const {
+        inlineExternal = true,
+        cache = new Map(),
+        report = {
+          referencesSeen: 0,
+          cidInlined: 0,
+          externalInlined: 0,
+          externalFailed: 0,
+          externalSkipped: 0,
+          cidMissing: 0,
+          stylesheetsInlined: 0,
+          stylesheetsSkipped: 0,
+        },
+        networkTaskRunner = (task) => task(),
+      } = options;
+      const trimmedUrl = resourceUrl.trim();
+      if (
+        !trimmedUrl ||
+        trimmedUrl.startsWith("data:") ||
+        trimmedUrl.startsWith("mailto:") ||
+        trimmedUrl.startsWith("#")
+      ) {
+        return null;
+      }
 
-			report.referencesSeen += 1;
-			const isCid = trimmedUrl.toLowerCase().startsWith("cid:");
+      report.referencesSeen += 1;
+      const isCid = trimmedUrl.toLowerCase().startsWith("cid:");
 
-			const cacheKey = `${baseUrl || ""}::${trimmedUrl}`;
-			if (cache.has(cacheKey)) {
-				const cachedValue = cache.get(cacheKey);
-				if (isCid) {
-					if (cachedValue) {
-						report.cidInlined += 1;
-					} else {
-						report.cidMissing += 1;
-					}
-				} else if (cachedValue) {
-					report.externalInlined += 1;
-				} else {
-					report.externalSkipped += 1;
-				}
-				return cachedValue;
-			}
+      const cacheKey = `${baseUrl || ""}::${trimmedUrl}`;
+      if (cache.has(cacheKey)) {
+        const cachedValue = cache.get(cacheKey);
+        if (isCid) {
+          if (cachedValue) {
+            report.cidInlined += 1;
+          } else {
+            report.cidMissing += 1;
+          }
+        } else if (cachedValue) {
+          report.externalInlined += 1;
+        } else {
+          report.externalSkipped += 1;
+        }
+        return cachedValue;
+      }
 
-			if (isCid) {
-				const cid = normalizeContentId(trimmedUrl.slice(4));
-				const cidResolved = cidMap.get(cid) || null;
-				cache.set(cacheKey, cidResolved);
-				if (cidResolved) {
-					report.cidInlined += 1;
-				} else {
-					report.cidMissing += 1;
-				}
-				return cidResolved;
-			}
+      if (isCid) {
+        const cid = normalizeContentId(trimmedUrl.slice(4));
+        const cidResolved = cidMap.get(cid) || null;
+        cache.set(cacheKey, cidResolved);
+        if (cidResolved) {
+          report.cidInlined += 1;
+        } else {
+          report.cidMissing += 1;
+        }
+        return cidResolved;
+      }
 
-			if (!inlineExternal) {
-				cache.set(cacheKey, null);
-				report.externalSkipped += 1;
-				return null;
-			}
+      if (!inlineExternal) {
+        cache.set(cacheKey, null);
+        report.externalSkipped += 1;
+        return null;
+      }
 
-			const absoluteUrl = toAbsoluteUrl(trimmedUrl, baseUrl);
-			if (!absoluteUrl) {
-				cache.set(cacheKey, null);
-				report.externalSkipped += 1;
-				return null;
-			}
+      const absoluteUrl = toAbsoluteUrl(trimmedUrl, baseUrl);
+      if (!absoluteUrl) {
+        cache.set(cacheKey, null);
+        report.externalSkipped += 1;
+        return null;
+      }
 
-			try {
-				let response;
-				try {
-					response = await networkTaskRunner(() => {
-						const controller = new AbortController();
-						const timeoutId = setTimeout(
-							() => controller.abort(),
-							FETCH_TIMEOUT_MS,
-						);
-						return fetch(absoluteUrl, {
-							signal: controller.signal,
-						}).finally(() => clearTimeout(timeoutId));
-					});
-				} catch (err) {
-					const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(absoluteUrl)}`;
-					try {
-						response = await networkTaskRunner(() => {
-							const controller = new AbortController();
-							const timeoutId = setTimeout(
-								() => controller.abort(),
-								FETCH_TIMEOUT_MS,
-							);
-							return fetch(proxyUrl, {
-								signal: controller.signal,
-							}).finally(() => clearTimeout(timeoutId));
-						});
-					} catch (_proxyErr) {
-						response = { ok: false };
-					}
-				}
-				if (!response.ok) {
-					cache.set(cacheKey, TRANSPARENT_PIXEL);
-					report.externalFailed += 1;
-					return TRANSPARENT_PIXEL;
-				}
-				const blob = await response.blob();
-				const mimeType = blob.type || "application/octet-stream";
-				const bytes = new Uint8Array(await blob.arrayBuffer());
-				const base64 = uint8ArrayToBase64(bytes);
-				const resolved = `data:${mimeType};base64,${base64}`;
-				cache.set(cacheKey, resolved);
-				report.externalInlined += 1;
-				return resolved;
-			} catch {
-				cache.set(cacheKey, TRANSPARENT_PIXEL);
-				report.externalFailed += 1;
-				return TRANSPARENT_PIXEL;
-			}
-		}
+      try {
+        let response;
+        try {
+          response = await networkTaskRunner(() => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(
+              () => controller.abort(),
+              FETCH_TIMEOUT_MS,
+            );
+            return fetch(absoluteUrl, {
+              signal: controller.signal,
+            }).finally(() => clearTimeout(timeoutId));
+          });
+        } catch (err) {
+          const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(absoluteUrl)}`;
+          try {
+            response = await networkTaskRunner(() => {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(
+                () => controller.abort(),
+                FETCH_TIMEOUT_MS,
+              );
+              return fetch(proxyUrl, {
+                signal: controller.signal,
+              }).finally(() => clearTimeout(timeoutId));
+            });
+          } catch (_proxyErr) {
+            response = { ok: false };
+          }
+        }
+        if (!response.ok) {
+          cache.set(cacheKey, TRANSPARENT_PIXEL);
+          report.externalFailed += 1;
+          return TRANSPARENT_PIXEL;
+        }
+        const blob = await response.blob();
+        const mimeType = blob.type || "application/octet-stream";
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        const base64 = uint8ArrayToBase64(bytes);
+        const resolved = `data:${mimeType};base64,${base64}`;
+        cache.set(cacheKey, resolved);
+        report.externalInlined += 1;
+        return resolved;
+      } catch {
+        cache.set(cacheKey, TRANSPARENT_PIXEL);
+        report.externalFailed += 1;
+        return TRANSPARENT_PIXEL;
+      }
+    }
 
-		// Convert a relative URL into an absolute one. This is necessary 
-		// for fetching external assets that aren't already part of the 
-		// email's local environment.
-		function toAbsoluteUrl(url, baseUrl = null) {
-			try {
-				// Only resolve against baseUrl when explicitly provided.
-				// Without a base, relative paths (e.g. "images/logo.png") would
-				// incorrectly resolve against the app's own origin.
-				if (!baseUrl && !/^https?:\/\//i.test(url)) {
-					return null;
-				}
-				return new URL(url, baseUrl || undefined).href;
-			} catch {
-				return null;
-			}
-		}
+    // Convert a relative URL into an absolute one. This is necessary
+    // for fetching external assets that aren't already part of the
+    // email's local environment.
+    function toAbsoluteUrl(url, baseUrl = null) {
+      try {
+        // Only resolve against baseUrl when explicitly provided.
+        // Without a base, relative paths (e.g. "images/logo.png") would
+        // incorrectly resolve against the app's own origin.
+        if (!baseUrl && !/^https?:\/\//i.test(url)) {
+          return null;
+        }
+        return new URL(url, baseUrl || undefined).href;
+      } catch {
+        return null;
+      }
+    }
 
-		// Manage the number of active network requests. By limiting 
-		// concurrency, we avoid overwhelming the browser and improve 
-		// the reliability of large batch inlining tasks.
-		function createConcurrencyLimiter(maxConcurrent) {
-			const pendingTasks = [];
-			let activeCount = 0;
+    // Manage the number of active network requests. By limiting
+    // concurrency, we avoid overwhelming the browser and improve
+    // the reliability of large batch inlining tasks.
+    function createConcurrencyLimiter(maxConcurrent) {
+      const pendingTasks = [];
+      let activeCount = 0;
 
-			return (task) =>
-				new Promise((resolve, reject) => {
-					pendingTasks.push({ task, resolve, reject });
+      return (task) =>
+        new Promise((resolve, reject) => {
+          pendingTasks.push({ task, resolve, reject });
 
-					const runNext = () => {
-						if (activeCount >= maxConcurrent || pendingTasks.length === 0) {
-							return;
-						}
+          const runNext = () => {
+            if (activeCount >= maxConcurrent || pendingTasks.length === 0) {
+              return;
+            }
 
-						const current = pendingTasks.shift();
-						activeCount += 1;
+            const current = pendingTasks.shift();
+            activeCount += 1;
 
-						Promise.resolve()
-							.then(current.task)
-							.then(current.resolve, current.reject)
-							.finally(() => {
-								activeCount -= 1;
-								runNext();
-							});
-					};
+            Promise.resolve()
+              .then(current.task)
+              .then(current.resolve, current.reject)
+              .finally(() => {
+                activeCount -= 1;
+                runNext();
+              });
+          };
 
-					runNext();
-				});
-		}
+          runNext();
+        });
+    }
 
-		// Perform asynchronous replacements within a string. This is 
-		// specifically useful for processing CSS where multiple 
-		// images need to be fetched and inlined concurrently.
-		async function replaceAsync(input, regex, asyncReplacer) {
-			const matches = [];
-			input.replace(regex, (...args) => {
-				matches.push(args);
-				return args[0];
-			});
+    // Perform asynchronous replacements within a string. This is
+    // specifically useful for processing CSS where multiple
+    // images need to be fetched and inlined concurrently.
+    async function replaceAsync(input, regex, asyncReplacer) {
+      const matches = [];
+      input.replace(regex, (...args) => {
+        matches.push(args);
+        return args[0];
+      });
 
-			const replacements = await Promise.all(
-				matches.map((args) => asyncReplacer(...args)),
-			);
-			let replacementIdx = 0;
+      const replacements = await Promise.all(
+        matches.map((args) => asyncReplacer(...args)),
+      );
+      let replacementIdx = 0;
 
-			return input.replace(regex, () => replacements[replacementIdx++]);
-		}
+      return input.replace(regex, () => replacements[replacementIdx++]);
+    }
 
-		// Sanitize a string for safe display in HTML. This prevents 
-		// malicious code in email headers or bodies from executing 
-		// in the application's context.
-		function escapeHtml(str) {
-			const div = document.createElement("div");
-			div.textContent = str;
-			return div.innerHTML;
-		}
-	</script>
-</body>
-
+    // Sanitize a string for safe display in HTML. This prevents
+    // malicious code in email headers or bodies from executing
+    // in the application's context.
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+    </script>
+  </body>
 </html>
