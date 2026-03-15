@@ -31,6 +31,7 @@
       background-color: var(--pico-primary-background);
     }
 
+    footer p,
     .drop-zone p {
       margin: 0;
       color: var(--pico-muted-color);
@@ -143,6 +144,20 @@
     #post-process-report li {
       margin: 0.05rem 0;
     }
+
+    footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--pico-muted-border-color);
+      color: var(--pico-muted-color);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    footer a {
+      color: var(--pico-muted-color);
+      text-decoration: underline;
+    }
     </style>
   </head>
 
@@ -188,6 +203,27 @@
         </article>
       </div>
     </main>
+
+    <footer class="container">
+      <p>
+        <strong>About this tool:</strong>
+        Convert `.eml` email files into viewable and downloadable HTML.
+      </p>
+      <p>
+        <strong>Privacy note:</strong>
+        This tool is completely private — data never leaves your computer. All
+        processing happens locally in your browser.
+      </p>
+      <p>
+        &copy; Charles Roper |
+        <a
+          href="https://github.com/charlesroper/eml-to-html"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Source code on GitHub</a
+        >
+      </p>
+    </footer>
 
     <script>
     const dropZone = document.getElementById("drop-zone");
